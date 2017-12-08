@@ -2,9 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-/// Viel geï¿½ndert von Jens Biermann am 07.02.2012
-/// Viel geï¿½ndert von Jens Biermann am 29.01.2015
-/// ï¿½nderungen von Jens Biermann am 23.08.2016
+/// Viel geändert von Jens Biermann am 07.02.2012
+/// Viel geändert von Jens Biermann am 29.01.2015
+/// Änderungen von Jens Biermann am 23.08.2016
 /// TParserStack to TList and Bugfix 10.09.2016
 
 unit NewMathParser;
@@ -538,7 +538,7 @@ begin
   s              := NumberInString;
   FParsePosition := FParsePosition + Length(s);
 
-  if CharInSet(s[Length(s)], [',']) then
+  if CharInSet(FExpression[FParsePosition-1], [',']) then
   begin
     Dec(FParsePosition);
     FExpression[FParsePosition] := ';';
