@@ -41,6 +41,8 @@ const
 
 type
 
+  EParseError = class(Exception);
+
   PError = ^TError;
 
   TError = record
