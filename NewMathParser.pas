@@ -2,9 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-/// Viel geändert von Jens Biermann am 07.02.2012
-/// Viel geändert von Jens Biermann am 29.01.2015
-/// Änderungen von Jens Biermann am 23.08.2016
+/// Viel geï¿½ndert von Jens Biermann am 07.02.2012
+/// Viel geï¿½ndert von Jens Biermann am 29.01.2015
+/// ï¿½nderungen von Jens Biermann am 23.08.2016
 /// TParserStack to TList and Bugfix 10.09.2016
 
 unit NewMathParser;
@@ -32,9 +32,9 @@ type
   strict protected
     FStack     : TParserStack;
     FError     : PError;
-    FOperations: TOperatoren;
+    FOperations: TOperation;
   public
-    constructor Create(AStack: TParserStack; AOperations: TOperatoren; AError: PError);
+    constructor Create(AStack: TParserStack; AOperations: TOperation; AError: PError);
     // destructor Destroy; override;
     procedure Prozess; virtual; abstract;
     property Error: PError read FError;
@@ -64,7 +64,7 @@ type
     procedure MoveOperator(Current: TParserItem);
     procedure CreateNewStack;
   public
-    constructor Create(AStack: TParserStack; AOperations: TOperatoren; AError: PError);
+    constructor Create(AStack: TParserStack; AOperations: TOperation; AError: PError);
     destructor Destroy; override;
     procedure Prozess; override;
   end;
@@ -77,7 +77,7 @@ type
   strict private
     FStack        : TList<TParserItem>;
     FError        : PError;
-    FOperations   : TOperatoren;
+    FOperations   : TOperation;
     FParsePosition: Integer;
     FExpression   : string;
     procedure ParseExponent;
@@ -85,7 +85,7 @@ type
     procedure ParseFunctions;
     procedure Parse;
   public
-    constructor Create(AOperations: TOperatoren; AError: PError);
+    constructor Create(AOperations: TOperation; AError: PError);
     destructor Destroy; override;
     function ExpressionToStack(const Expression: string): TArray<TParserItem>;
   end;
@@ -96,13 +96,13 @@ type
     FResultStack: TStack<TParserItem>;
     FValues     : TList<Double>;
     FError      : PError;
-    FOperations : TOperatoren;
+    FOperations : TOperation;
     procedure StackToResult_Operation(ACurrent: TParserItem);
     procedure StackToResult(const AStack: TArray<TParserItem>);
     function SetResult: Double;
     procedure StackToResult_Variable(Current: TParserItem);
   public
-    constructor Create(AOperations: TOperatoren; AVariables: TVariables; AError: PError);
+    constructor Create(AOperations: TOperation; AVariables: TVariables; AError: PError);
     destructor Destroy; override;
     function calcResult(const AStack: TArray<TParserItem>): Double;
   end;
@@ -120,7 +120,7 @@ type
     FValidate  : TValidate;
     FParser    : TParser;
     FPriority  : TPriority;
-    FOperations: TOperatoren;
+    FOperations: TOperation;
     function GetParserResult: Double;
     procedure SetExpression(const Value: string);
     procedure DoError(AError: TError);
@@ -150,13 +150,13 @@ begin
   FExpression := '';
   FError.Clear;
   FIsToCalc   := False;
-  FOperations := TOperatoren.Create;
+  FOperations := TOperation.Create;
   FMainStack  := TParserStack.Create;
   FVariables  := TVariables.Create;
   FVariables.Add('pi', Pi);
   FCalculator := TCalculator.Create(FOperations, FVariables, @FError);
 
-  AddOperatoren(FOperations);
+  AddOperation(FOperations);
   AddMath(FOperations);
   AddTrigonometry(FOperations);
   AddTrigonometryDeg(FOperations);
@@ -463,7 +463,7 @@ end;
 
 { TProzessbasis }
 
-constructor TProzessbasis.Create(AStack: TParserStack; AOperations: TOperatoren; AError: PError);
+constructor TProzessbasis.Create(AStack: TParserStack; AOperations: TOperation; AError: PError);
 begin
   inherited Create;
   FOperations := AOperations;
@@ -473,7 +473,7 @@ end;
 
 { TPraeProzess }
 
-constructor TParser.Create(AOperations: TOperatoren; AError: PError);
+constructor TParser.Create(AOperations: TOperation; AError: PError);
 begin
   inherited Create;
   FOperations := AOperations;
@@ -597,7 +597,7 @@ begin
 
       else
         begin
-          FError^.Code     := cErrorInvalidCar;
+          FError^.Code     := cErrorInvalidChar;
           FError^.Position := FParsePosition;
         end;
       end;
@@ -633,7 +633,7 @@ end;
 
 { TPostProzess_Priority }
 
-constructor TPriority.Create(AStack: TParserStack; AOperations: TOperatoren; AError: PError);
+constructor TPriority.Create(AStack: TParserStack; AOperations: TOperation; AError: PError);
 begin
   inherited;
   FPStack   := TStack<TParserItem>.Create;
@@ -722,7 +722,7 @@ end;
 
 { TCalculator }
 
-constructor TCalculator.Create(AOperations: TOperatoren; AVariables: TVariables; AError: PError);
+constructor TCalculator.Create(AOperations: TOperation; AVariables: TVariables; AError: PError);
 begin
   inherited Create;
   FOperations  := AOperations;

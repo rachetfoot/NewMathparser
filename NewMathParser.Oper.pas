@@ -18,7 +18,7 @@ const
   // Internal error:
   cInternalError = 1;
   // Expression errors:
-  cErrorInvalidCar   = 2;
+  cErrorInvalidChar   = 2;
   cErrorUnknownName  = 3;
   cErrorInvalidFloat = 4;
   cErrorOperator     = 5;
@@ -80,7 +80,7 @@ type
     property Arguments: Integer read FArguments write FArguments;
   end;
 
-  TOperatoren = class(TObjectList<TOperator>)
+  TOperation = class(TObjectList<TOperator>)
   private
     procedure AddOpNone;
     procedure AddOpNeg;
@@ -96,11 +96,11 @@ type
     property Op[aName: string]: TOperator read GetOp; default;
   end;
 
-procedure AddOperatoren(AOperatoren: TOperatoren);
-procedure AddMath(AOperatoren: TOperatoren);
-procedure AddTrigonometry(AOperatoren: TOperatoren);
-procedure AddTrigonometryDeg(AOperatoren: TOperatoren);
-procedure AddLogarithm(AOperatoren: TOperatoren);
+procedure AddOperation(AOperation: TOperation);
+procedure AddMath(AOperation: TOperation);
+procedure AddTrigonometry(AOperation: TOperation);
+procedure AddTrigonometryDeg(AOperation: TOperation);
+procedure AddLogarithm(AOperation: TOperation);
 
 type
 
@@ -197,19 +197,19 @@ end;
 
 { TOperationen }
 
-constructor TOperatoren.Create;
+constructor TOperation.Create;
 begin
   inherited Create(True);
   AddOpNone;
   AddOpNeg;
 end;
 
-function TOperatoren.Contains(Name: string): Boolean;
+function TOperation.Contains(Name: string): Boolean;
 begin
   Result := IndexOfName(Name) <> -1;
 end;
 
-function TOperatoren.IndexOfName(aName: string): Integer;
+function TOperation.IndexOfName(aName: string): Integer;
 var
   i: Integer;
 begin
@@ -219,7 +219,7 @@ begin
   Result := -1;
 end;
 
-function TOperatoren.GetOp(aName: string): TOperator;
+function TOperation.GetOp(aName: string): TOperator;
 var
   iP: TOperator;
 begin
@@ -230,7 +230,7 @@ begin
   Result := nil;
 end;
 
-function TOperatoren.RenameOperation(CurrentName, NewName: string): Boolean;
+function TOperation.RenameOperation(CurrentName, NewName: string): Boolean;
 var
   i: Integer;
 begin
@@ -250,7 +250,7 @@ begin
   end;
 end;
 
-function TOperatoren.ValidVariableName(Name: string): Boolean;
+function TOperation.ValidVariableName(Name: string): Boolean;
 /// Determine if variable Name is defined with 'a'..'z', '_'
 /// and does not enter in conflict with function Names:
 var
@@ -270,12 +270,12 @@ begin
       Exit(True);
 end;
 
-procedure TOperatoren.AddOpNone;
+procedure TOperation.AddOpNone;
 begin
   Add(TOperator.Create(0, 0, ''));
 end;
 
-procedure TOperatoren.AddOpNeg;
+procedure TOperation.AddOpNeg;
 begin
   // Internal functions
   // OpNeg (negative value, used for diferenciate with substract operator)
@@ -286,7 +286,7 @@ begin
     end));
 end;
 
-function TOperatoren.AddCustomOperation(Name: string; Arguments: Integer; Priority: byte): Boolean;
+function TOperation.AddCustomOperation(Name: string; Arguments: Integer; Priority: byte): Boolean;
 begin
   Name := AnsiLowerCase(Name);
   if ValidVariableName(Name) then
@@ -297,31 +297,31 @@ begin
   Result := False;
 end;
 
-procedure AddOperatoren(AOperatoren: TOperatoren);
+procedure AddOperation(AOperation: TOperation);
 begin
   // Add
-  AOperatoren.Add(TOperator.Create(1, 2, '+',
+  AOperation.Add(TOperator.Create(1, 2, '+',
     function(Values: TArray<Double>): Double
     begin
       Result := Values[0] + Values[1];
     end));
 
   // subtract
-  AOperatoren.Add(TOperator.Create(1, 2, '-',
+  AOperation.Add(TOperator.Create(1, 2, '-',
     function(Values: TArray<Double>): Double
     begin
       Result := Values[0] - Values[1];
     end));
 
   // Multi
-  AOperatoren.Add(TOperator.Create(2, 2, '*',
+  AOperation.Add(TOperator.Create(2, 2, '*',
     function(Values: TArray<Double>): Double
     begin
       Result := Values[0] * Values[1];
     end));
 
   // Divide
-  AOperatoren.Add(TOperator.Create(2, 2, '/',
+  AOperation.Add(TOperator.Create(2, 2, '/',
     function(Values: TArray<Double>): Double
     begin
       Result := Values[0] / Values[1];
@@ -335,7 +335,7 @@ begin
     end));
 
   // Power
-  AOperatoren.Add(TOperator.Create(3, 2, '^',
+  AOperation.Add(TOperator.Create(3, 2, '^',
     function(Values: TArray<Double>): Double
     begin
       Result := Power(Values[0], Values[1]);
@@ -349,7 +349,7 @@ begin
     end));
 
   // Mod
-  AOperatoren.Add(TOperator.Create(2, 2, '%',
+  AOperation.Add(TOperator.Create(2, 2, '%',
     function(Values: TArray<Double>): Double
     var
       x, y: Double;
@@ -367,10 +367,10 @@ begin
     end));
 end;
 
-procedure AddMath(AOperatoren: TOperatoren);
+procedure AddMath(AOperation: TOperation);
 begin
   // Absolute
-  AOperatoren.Add(TOperator.Create(0, 1, 'abs',
+  AOperation.Add(TOperator.Create(0, 1, 'abs',
     function(Values: TArray<Double>): Double
     begin
       Result := Abs(Values[0]);
@@ -384,7 +384,7 @@ begin
     end));
 
   // Max
-  AOperatoren.Add(TOperator.Create(0, -1, 'max',
+  AOperation.Add(TOperator.Create(0, -1, 'max',
     function(Values: TArray<Double>): Double
     begin
       Result := MaxValue(Values);
@@ -398,7 +398,7 @@ begin
     end));
 
   // Min
-  AOperatoren.Add(TOperator.Create(0, -1, 'min',
+  AOperation.Add(TOperator.Create(0, -1, 'min',
     function(Values: TArray<Double>): Double
     begin
       Result := MinValue(Values);
@@ -412,14 +412,14 @@ begin
     end));
 
   // RoundTo
-  AOperatoren.Add(TOperator.Create(0, 2, 'roundto',
+  AOperation.Add(TOperator.Create(0, 2, 'roundto',
     function(Values: TArray<Double>): Double
     begin
       Result := RoundTo(Values[0], round(Values[1]));
     end));
 
   // Sqrt
-  AOperatoren.Add(TOperator.Create(0, 1, 'sqrt',
+  AOperation.Add(TOperator.Create(0, 1, 'sqrt',
     function(Values: TArray<Double>): Double
     begin
       Result := sqrt(Values[0]);
@@ -433,14 +433,14 @@ begin
     end));
 
   // Sqr
-  AOperatoren.Add(TOperator.Create(0, 1, 'sqr',
+  AOperation.Add(TOperator.Create(0, 1, 'sqr',
     function(Values: TArray<Double>): Double
     begin
       Result := sqr(Values[0]);
     end));
 
   // Sum
-  AOperatoren.Add(TOperator.Create(0, -1, 'sum',
+  AOperation.Add(TOperator.Create(0, -1, 'sum',
     function(Values: TArray<Double>): Double
     begin
       Result := Sum(Values);
@@ -454,59 +454,59 @@ begin
     end));
 
   // Ceil
-  AOperatoren.Add(TOperator.Create(0, 1, 'ceil',
+  AOperation.Add(TOperator.Create(0, 1, 'ceil',
     function(Values: TArray<Double>): Double
     begin
       Result := Ceil(Values[0]);
     end));
 
   // Floor
-  AOperatoren.Add(TOperator.Create(0, 1, 'floor',
+  AOperation.Add(TOperator.Create(0, 1, 'floor',
     function(Values: TArray<Double>): Double
     begin
       Result := Floor(Values[0]);
     end));
 
   // Sign
-  AOperatoren.Add(TOperator.Create(0, 1, 'sign',
+  AOperation.Add(TOperator.Create(0, 1, 'sign',
     function(Values: TArray<Double>): Double
     begin
       Result := Sign(Values[0]);
     end));
 
   // Int;
-  AOperatoren.Add(TOperator.Create(0, 1, 'int',
+  AOperation.Add(TOperator.Create(0, 1, 'int',
     function(Values: TArray<Double>): Double
     begin
       Result := int(Values[0]);
     end));
 
   // Frac;
-  AOperatoren.Add(TOperator.Create(0, 1, 'frac',
+  AOperation.Add(TOperator.Create(0, 1, 'frac',
     function(Values: TArray<Double>): Double
     begin
       Result := frac(Values[0]);
     end));
 end;
 
-procedure AddTrigonometry(AOperatoren: TOperatoren);
+procedure AddTrigonometry(AOperation: TOperation);
 begin
   // sin
-  AOperatoren.Add(TOperator.Create(0, 1, 'sin',
+  AOperation.Add(TOperator.Create(0, 1, 'sin',
     function(Values: TArray<Double>): Double
     begin
       Result := Sin(Values[0]);
     end));
 
   // cos
-  AOperatoren.Add(TOperator.Create(0, 1, 'cos',
+  AOperation.Add(TOperator.Create(0, 1, 'cos',
     function(Values: TArray<Double>): Double
     begin
       Result := Cos(Values[0]);
     end));
 
   // tan
-  AOperatoren.Add(TOperator.Create(0, 1, 'tan',
+  AOperation.Add(TOperator.Create(0, 1, 'tan',
     function(Values: TArray<Double>): Double
     begin
       Result := Tan(Values[0]);
@@ -520,7 +520,7 @@ begin
     end));
 
   // arcsin
-  AOperatoren.Add(TOperator.Create(0, 1, 'asin',
+  AOperation.Add(TOperator.Create(0, 1, 'asin',
     function(Values: TArray<Double>): Double
     begin
       Result := arcsin(Values[0]);
@@ -534,7 +534,7 @@ begin
     end));
 
   // arccos
-  AOperatoren.Add(TOperator.Create(0, 1, 'acos',
+  AOperation.Add(TOperator.Create(0, 1, 'acos',
     function(Values: TArray<Double>): Double
     begin
       Result := arccos(Values[0]);
@@ -548,44 +548,44 @@ begin
     end));
 
   // arctan
-  AOperatoren.Add(TOperator.Create(0, 1, 'atan',
+  AOperation.Add(TOperator.Create(0, 1, 'atan',
     function(Values: TArray<Double>): Double
     begin
       Result := arctan(Values[0]);
     end));
 
   // RadToDeg
-  AOperatoren.Add(TOperator.Create(0, 1, 'radtodeg',
+  AOperation.Add(TOperator.Create(0, 1, 'radtodeg',
     function(Values: TArray<Double>): Double
     begin
       Result := RadToDeg(Values[0]);
     end));
 
   // DegToRad
-  AOperatoren.Add(TOperator.Create(0, 1, 'degtorad',
+  AOperation.Add(TOperator.Create(0, 1, 'degtorad',
     function(Values: TArray<Double>): Double
     begin
       Result := DegToRad(Values[0]);
     end));
 end;
 
-procedure AddTrigonometryDeg(AOperatoren: TOperatoren);
+procedure AddTrigonometryDeg(AOperation: TOperation);
 begin
   // Sin deg
-  AOperatoren.Add(TOperator.Create(0, 1, 'sind',
+  AOperation.Add(TOperator.Create(0, 1, 'sind',
     function(Values: TArray<Double>): Double
     begin
       Result := Sin(DegToRad(Values[0]));
     end));
   // Cos deg
-  AOperatoren.Add(TOperator.Create(0, 1, 'cosd',
+  AOperation.Add(TOperator.Create(0, 1, 'cosd',
     function(Values: TArray<Double>): Double
     begin
       Result := Cos(DegToRad(Values[0]));
     end));
 
   // Tan deg
-  AOperatoren.Add(TOperator.Create(0, 1, 'tand',
+  AOperation.Add(TOperator.Create(0, 1, 'tand',
     function(Values: TArray<Double>): Double
     begin
       Result := Tan(DegToRad(Values[0]));
@@ -599,7 +599,7 @@ begin
     end));
 
   // arcSin deg
-  AOperatoren.Add(TOperator.Create(0, 1, 'asind',
+  AOperation.Add(TOperator.Create(0, 1, 'asind',
     function(Values: TArray<Double>): Double
     begin
       Result := RadToDeg(arcsin(Values[0]));
@@ -613,7 +613,7 @@ begin
     end));
 
   // arcCos deg
-  AOperatoren.Add(TOperator.Create(0, 1, 'acosd',
+  AOperation.Add(TOperator.Create(0, 1, 'acosd',
     function(Values: TArray<Double>): Double
     begin
       Result := RadToDeg(arccos(Values[0]));
@@ -627,17 +627,17 @@ begin
     end));
 
   // arcTan deg
-  AOperatoren.Add(TOperator.Create(0, 1, 'atand',
+  AOperation.Add(TOperator.Create(0, 1, 'atand',
     function(Values: TArray<Double>): Double
     begin
       Result := RadToDeg(arctan(Values[0]));
     end));
 end;
 
-procedure AddLogarithm(AOperatoren: TOperatoren);
+procedure AddLogarithm(AOperation: TOperation);
 begin
   // Ln
-  AOperatoren.Add(TOperator.Create(0, 1, 'ln',
+  AOperation.Add(TOperator.Create(0, 1, 'ln',
     function(Values: TArray<Double>): Double
     begin
       Result := ln(Values[0]);
@@ -651,7 +651,7 @@ begin
     end));
 
   // lnxp1
-  AOperatoren.Add(TOperator.Create(0, 1, 'lnxp1',
+  AOperation.Add(TOperator.Create(0, 1, 'lnxp1',
     function(Values: TArray<Double>): Double
     begin
       Result := LnXP1(Values[0]);
@@ -665,14 +665,14 @@ begin
     end));
 
   // ldexp
-  AOperatoren.Add(TOperator.Create(0, 2, 'ldexp',
+  AOperation.Add(TOperator.Create(0, 2, 'ldexp',
     function(Values: TArray<Double>): Double
     begin
       Result := Ldexp(Values[0], round(Values[1]));
     end));
 
   // Log
-  AOperatoren.Add(TOperator.Create(0, 1, 'log10',
+  AOperation.Add(TOperator.Create(0, 1, 'log10',
     function(Values: TArray<Double>): Double
     begin
       Result := log10(Values[0]);
@@ -686,7 +686,7 @@ begin
     end));
 
   // LogN
-  AOperatoren.Add(TOperator.Create(0, 2, 'logn',
+  AOperation.Add(TOperator.Create(0, 2, 'logn',
     function(Values: TArray<Double>): Double
     begin
       Result := LogN(Values[0], Values[1]);
@@ -700,7 +700,7 @@ begin
     end));
 
   // Exp
-  AOperatoren.Add(TOperator.Create(0, 1, 'exp',
+  AOperation.Add(TOperator.Create(0, 1, 'exp',
     function(Values: TArray<Double>): Double
     begin
       Result := exp(Values[0]);
@@ -851,7 +851,7 @@ end;
 procedure TVar.SetValue(const Value: Double);
 begin
   if GetIsFunc then
-    raise Exception.Create('Fehler: Value is a function')
+    raise Exception.Create('Error: Value is a function')
   else
     FValue := Value;
 end;
@@ -906,8 +906,8 @@ begin
     cInternalError:
       Result := 'Cannot parse';
 
-    cErrorInvalidCar:
-      Result := 'Invalid car';
+    cErrorInvalidChar:
+      Result := 'Invalid char';
     cErrorUnknownName:
       Result := 'Unknown function or variable';
     cErrorInvalidFloat:
@@ -940,7 +940,7 @@ begin
     cErrorFxInvalidValue:
       Result := 'Invalid parameter value for function';
     cErrorTan:
-      Result := 'Invalid parameter value for tangens-function';
+      Result := 'Invalid parameter value for tangent-function';
   end;
 end;
 
