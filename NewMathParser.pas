@@ -141,6 +141,9 @@ type
 
 implementation
 
+var
+  LocalFormatSettings: TFormatSettings;
+
 constructor TMathParser.Create;
 begin
   inherited;
@@ -528,8 +531,8 @@ var
     for i  := FParsePosition to Length(FExpression) do
       if CharInSet(FExpression[i], Numbers) then
         Result := Result + FExpression[i]
-      else if CharInSet(FExpression[i], ['.', ',']) then
-        Result := Result + FormatSettings.DecimalSeparator
+      else if FExpression[i] = LocalFormatSettings.DecimalSeparator then
+        Result := Result + LocalFormatSettings.DecimalSeparator
       else
         Break;
   end;
@@ -538,17 +541,7 @@ begin
   s              := NumberInString;
   FParsePosition := FParsePosition + Length(s);
 
-  if CharInSet(FExpression[FParsePosition-1], [',']) then
-  begin
-    Dec(FParsePosition);
-    FExpression[FParsePosition] := ';';
-
-    System.Delete(s, Length(s), 1);
-    if s = '' then
-      Exit;
-  end;
-
-  if TryStrToFloat(s, v) then
+  if TryStrToFloat(s, v, LocalFormatSettings) then
     FStack.Add(TParserItem.Create(v, FParsePosition))
   else
   begin
@@ -584,10 +577,10 @@ begin
         'a' .. 'z', '_':
           ParseFunctions;
 
-        '0' .. '9', '.', ',':
+        '0' .. '9', '.':
           ParseNumbers;
 
-        ';':
+        ';', ',':
           begin
             Add(TParserItem.Create(tsSeparator, FParsePosition));
             Inc(FParsePosition);
@@ -920,5 +913,12 @@ begin
     if iItems.TypeStack = tsFunction then
       iItems.ArgumentsCount := ArgCount(iItems);
 end;
+
+initialization
+  LocalFormatSettings := TFormatSettings.Create;
+  LocalFormatSettings.DecimalSeparator := '.';
+  LocalFormatSettings.ThousandSeparator := ',';
+
+finalization
 
 end.
