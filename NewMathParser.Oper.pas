@@ -112,6 +112,8 @@ procedure AddMath(AOperation: TOperation);
 procedure AddTrigonometry(AOperation: TOperation);
 procedure AddTrigonometryDeg(AOperation: TOperation);
 procedure AddLogarithm(AOperation: TOperation);
+procedure AddComparisons(AOperation: TOperation);
+procedure AddLogic(AOperation: TOperation);
 
 type
 
@@ -730,6 +732,77 @@ begin
     function(Values: TArray<Double>): Double
     begin
       Result := exp(Values[0]);
+    end));
+end;
+
+  function bool2float(val: Boolean): double; inline;
+  begin
+    if val then
+      Result := 1
+    else
+      Result := 0;
+  end;
+
+procedure AddComparisons(AOperation: TOperation);
+begin
+  AOperation.Add(TOperator.Create(0.9, 2, '>',
+    function(Values: TArray<Double>): Double
+    begin
+      Result := bool2float(Values[0] > Values[1]);
+    end));
+
+  AOperation.Add(TOperator.Create(0.9, 2, '>=',
+    function(Values: TArray<Double>): Double
+    begin
+      Result := bool2float(Values[0] >= Values[1]);
+    end));
+
+  AOperation.Add(TOperator.Create(0.9, 2, '<',
+    function(Values: TArray<Double>): Double
+    begin
+      Result := bool2float(Values[0] < Values[1]);
+    end));
+
+  AOperation.Add(TOperator.Create(0.9, 2, '<=',
+    function(Values: TArray<Double>): Double
+    begin
+      Result := bool2float(Values[0] <= Values[1]);
+    end));
+
+  AOperation.Add(TOperator.Create(0.8, 2, '==',
+    function(Values: TArray<Double>): Double
+    begin
+      Result := bool2float(Values[0] = Values[1]);
+    end));
+
+  AOperation.Add(TOperator.Create(0.8, 2, '!=',
+    function(Values: TArray<Double>): Double
+    begin
+      Result := bool2float(Values[0] <> Values[1]);
+    end));
+end;
+
+procedure AddLogic(AOperation: TOperation);
+begin
+  AOperation.Add(TOperator.Create(0.6, 2, '&&',
+    function(Values: TArray<Double>): Double
+    begin
+      Result := bool2float((Values[0] <> 0) and (Values[1] <> 0));
+    end));
+
+  AOperation.Add(TOperator.Create(0.59, 2, '||',
+    function(Values: TArray<Double>): Double
+    begin
+      Result := bool2float((Values[0] <> 0) or (Values[1] <> 0));
+    end));
+
+  AOperation.Add(TOperator.Create(0, 3, 'if',
+    function(Values: TArray<Double>): Double
+    begin
+      if Values[0] <> 0 then
+        Result := Values[1]
+      else
+        Result := Values[2];
     end));
 end;
 
