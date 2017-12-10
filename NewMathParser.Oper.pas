@@ -2,9 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-/// Viel geï¿½ndert von Jens Biermann am 07.02.2012
-/// Viel geï¿½ndert von Jens Biermann am 29.01.2015
-/// ï¿½nderungen von Jens Biermann am 23.08.2016
+/// Viel geändert von Jens Biermann am 07.02.2012
+/// Viel geändert von Jens Biermann am 29.01.2015
+/// Änderungen von Jens Biermann am 23.08.2016
 /// Items in TVariables - Jens Biermann am 10.09.2016
 
 unit NewMathParser.Oper;
@@ -791,13 +791,19 @@ begin
   AOperation.Add(TOperator.Create(0.6, 2, '&&',
     function(Values: TArray<Double>): Double
     begin
-      Result := bool2float((Values[0] <> 0) and (Values[1] <> 0));
+      if Values[0] <> 0 then
+        Result := Values[1]
+      else
+        Result := Values[0];
     end));
 
   AOperation.Add(TOperator.Create(0.59, 2, '||',
     function(Values: TArray<Double>): Double
     begin
-      Result := bool2float((Values[0] <> 0) or (Values[1] <> 0));
+      if Values[0] <> 0 then
+        Result := Values[0]
+      else
+        Result := Values[1];
     end));
 
   AOperation.Add(TOperator.Create(0, 3, 'if',
