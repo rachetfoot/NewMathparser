@@ -1,4 +1,4 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
+﻿// This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
@@ -417,10 +417,11 @@ procedure TValidate.ValidateOperator(const Pos: Integer);
 begin
   if (Pos = 0) or (FStack[Pos - 1].TypeStack in [tsOperator, tsLeftBracket, tsSeparator]) then
   begin
-    if (FStack[Pos].Name.Length = 1) and CharInSet(FStack[Pos].Name[1], FOperations.OpChars-['-', '+']) then
+    if (FStack[Pos].Name.Length >= 1) and CharInSet(FStack[Pos].Name[1], FOperations.OpChars-['-', '+']) then
     begin
       FError^.Code     := cErrorOperator;
       FError^.Position := FStack[Pos].TextPos;
+      FError^.Name     := FStack[Pos].Name;
     end;
   end
 
@@ -520,6 +521,7 @@ begin
   if Length(S) = 0 then begin
     FError^.Code     := cErrorInvalidOperator;
     FError^.Position := FParsePosition;
+    FError^.Name     := OperationChars;
   end;
 end;
 
@@ -583,6 +585,7 @@ begin
   begin
     FError^.Code     := cErrorInvalidFloat;
     FError^.Position := FParsePosition;
+    FError^.Name     := s;
   end;
 end;
 
@@ -624,6 +627,7 @@ begin
         end else begin
           FError^.Code     := cErrorInvalidChar;
           FError^.Position := FParsePosition;
+          FError^.Name     := FExpression[FParsePosition];
         end;
       end;
     end;
@@ -838,6 +842,7 @@ begin
   begin
     FError^.Code     := cErrorUnknownName;
     FError^.Position := Current.TextPos;
+    FError^.Name     := Current.Name;
   end;
 end;
 

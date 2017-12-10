@@ -54,13 +54,15 @@ type
   private
     FCode    : Integer;
     FPosition: Integer;
+    FName    : string;
   public
-    constructor Create(ACode, APosition: Integer);
+    constructor Create(ACode, APosition: Integer; AName: string);
     procedure Clear;
     function ToString: string;
     function IsNoError: Boolean;
     property Code: Integer read FCode write FCode;
     property Position: Integer read FPosition write FPosition;
+    property Name: string read FName write FName;
   end;
 
   TOpFunc    = reference to function(Values: TArray<Double>): Double;
@@ -961,12 +963,14 @@ procedure TError.Clear;
 begin
   FCode     := cNoError;
   FPosition := -1;
+  FName     := '';
 end;
 
-constructor TError.Create(ACode, APosition: Integer);
+constructor TError.Create(ACode, APosition: Integer; AName: string);
 begin
   FCode     := ACode;
   FPosition := APosition;
+  FName     := AName;
 end;
 
 function TError.IsNoError: Boolean;
@@ -984,43 +988,45 @@ begin
       Result := 'Cannot parse';
 
     cErrorInvalidChar:
-      Result := 'Invalid char';
+      Result := 'Invalid char ''%0:s'' at position %1:d';
     cErrorUnknownName:
-      Result := 'Unknown function or variable';
+      Result := 'Unknown function or variable ''%0:s'' at position %1:d';
     cErrorInvalidFloat:
-      Result := 'Invalid float number';
+      Result := 'Invalid float number ''%0:s'' at position %1:d';
     cErrorOperator:
-      Result := 'Operator cannot be placed here';
+      Result := 'Operator ''%0:s'' cannot be placed here at position %1:d';
     cErrorInvalidOperator:
-      Result := 'Invalid operator';
+      Result := 'Invalid operator ''%0:s'' at position %1:d';
     cErrorNotEnoughArgs:
-      Result := 'Not enough arguments or operands';
+      Result := 'Not enough arguments or operands at position %1:d';
     cErrorSeparatorNeedArgument:
-      Result := 'Missing argument after separator';
+      Result := 'Missing argument after separator at position %1:d';
     cErrorMissingLeftBrackets:
-      Result := 'Missing at least one left Bracket';
+      Result := 'Missing at least one left Bracket at position %1:d';
     cErrorMissingRightBrackets:
-      Result := 'Missing at least one right Bracket';
+      Result := 'Missing at least one right Bracket at position %1:d';
     cErrorLeftBracket:
-      Result := 'Left Bracket cannot be placed here';
+      Result := 'Left Bracket cannot be placed here at position %1:d';
     cErrorRightBracket:
-      Result := 'Right Bracket cannot be placed here';
+      Result := 'Right Bracket cannot be placed here at position %1:d';
     cErrorSeparator:
-      Result := 'Separator cannot be placed here';
+      Result := 'Separator cannot be placed here at position %1:d';
     cErrorOperatorNeedArgument:
-      Result := 'Operator must be followed by argument';
+      Result := 'Operator must be followed by argument at position %1:d';
 
     cErrorCalc:
-      Result := 'Invalid operation';
+      Result := 'Invalid operation at position %1:d';
     cErrorDivByZero:
-      Result := 'Division by zero';
+      Result := 'Division by zero at position %1:d';
     cErrorPower:
-      Result := 'Invalid use of power function';
+      Result := 'Invalid use of power function at position %1:d';
     cErrorFxInvalidValue:
-      Result := 'Invalid parameter value for function';
+      Result := 'Invalid parameter value for function at position %1:d';
     cErrorTan:
-      Result := 'Invalid parameter value for tangent-function';
+      Result := 'Invalid parameter value for tangent-function at position %1:d';
   end;
+
+  Result := Format(Result, [FName, FPosition]);
 end;
 
 end.
