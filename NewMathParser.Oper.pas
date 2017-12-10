@@ -806,6 +806,12 @@ begin
       else
         Result := Values[2];
     end));
+
+  AOperation.Add(TOperator.Create(2.5, 1, '!',
+    function(Values: TArray<Double>): Double
+    begin
+      Result := bool2float(Values[0] = 0);
+    end));
 end;
 
 { TParserItem }

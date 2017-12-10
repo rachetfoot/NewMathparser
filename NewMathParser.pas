@@ -153,6 +153,8 @@ begin
   FMainStack  := TParserStack.Create;
   FVariables  := TVariables.Create;
   FVariables.Add('pi', Pi);
+  FVariables.Add('true', 1);
+  FVariables.Add('false', 0);
   FCalculator := TCalculator.Create(FOperations, FVariables, @FError);
 
   AddOperation(FOperations);
@@ -417,7 +419,7 @@ procedure TValidate.ValidateOperator(const Pos: Integer);
 begin
   if (Pos = 0) or (FStack[Pos - 1].TypeStack in [tsOperator, tsLeftBracket, tsSeparator]) then
   begin
-    if (FStack[Pos].Name.Length >= 1) and CharInSet(FStack[Pos].Name[1], FOperations.OpChars-['-', '+']) then
+    if (FStack[Pos].Name.Length >= 1) and CharInSet(FStack[Pos].Name[1], FOperations.OpChars-['-', '+', '!']) then
     begin
       FError^.Code     := cErrorOperator;
       FError^.Position := FStack[Pos].TextPos;
