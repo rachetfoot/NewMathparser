@@ -739,7 +739,7 @@ var
 begin
   Prio := FOperations[Current.Name].Priority;
   with FTmpStack do
-    while (Count > 0) and (Peek.TypeStack = tsOperator) and (Prio <= FOperations[Peek.Name].Priority) do
+    while (Count > 0) and (Peek.TypeStack = tsOperator) and (Prio < FOperations[Peek.Name].Priority) do
       FPStack.Push(FTmpStack.Pop);
   FTmpStack.Push(Current);
 end;

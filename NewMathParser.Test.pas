@@ -23,6 +23,7 @@ type
     procedure CheckPerformance(aCode: TProc; ExpectedMinTime, ExpectedMaxTime: Int64; const aMessage: string = '');
   published
     procedure Test1;
+    procedure TestDoubleOp;
     procedure TestBrackekts;
     procedure TestAdd;
     procedure TestSub;
@@ -565,6 +566,19 @@ begin
   begin
     Expression  := 'ATanD(0.5)';
     Expected    := 26.56505;
+    ReturnValue := ParserResult;
+    CheckEquals(Expected, ReturnValue, 0.0001, Expression);
+  end;
+end;
+
+procedure TestTMathParser.TestDoubleOp;
+var
+  Expected, ReturnValue: Double;
+begin
+  with FMathParser do
+  begin
+    Expression  := '--1';
+    Expected    := 1;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, 0.0001, Expression);
   end;
