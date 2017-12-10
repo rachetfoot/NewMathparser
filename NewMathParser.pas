@@ -833,7 +833,7 @@ begin
   begin
     Result := O.Func(FValues.ToArray);
     if (ACurrent.Name = '=') then
-      FVariables.AddOrSetValue(LeftVarName.ToUpper, TVar.Create(LeftVarName, Result));
+      FVariables.Add(LeftVarName.ToUpper, Result);
     FResultStack.Push(TParserItem.Create(Result, ACurrent.TextPos, ACurrent.Name));
   end else
   begin
