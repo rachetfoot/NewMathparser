@@ -144,35 +144,6 @@ type
     property TextPos: Integer read FTextPos write FTextPos;
   end;
 
-  TVar = record
-  private
-    FValue    : Double;
-    FValueFunc: TFunc<Double>;
-    FName     : string;
-    function GetIsFunc: Boolean;
-    function GetValue: Double;
-    procedure SetValue(const Value: Double);
-  public
-    constructor Create(aName: string; aValue: Double); overload;
-    constructor Create(aName: string; aValue: TFunc<Double>); overload;
-    property Name: string read FName write FName;
-    property IsFunc: Boolean read GetIsFunc;
-  public
-    class operator Implicit(a: Double): TVar; overload; inline;
-    class operator Implicit(a: TFunc<Double>): TVar; overload; inline;
-    class operator Implicit(a: TVar): Double; overload; inline;
-  end;
-
-  TVariables = class(TDictionary<string, TVar>)
-  private
-    function GetItem(const Key: string): TVar;
-    procedure SetItem(const Key: string; const Value: TVar);
-  public
-    procedure Add(Name: string; Value: Double); overload;
-    procedure Add(Name: string; Value: TFunc<Double>); overload;
-    property Items[const Key: string]: TVar read GetItem write SetItem; default;
-  end;
-
 procedure ClearAndFreeStack(S: TStack<TParserItem>);
 
 implementation
@@ -906,78 +877,6 @@ procedure ClearAndFreeStack(S: TStack<TParserItem>);
 begin
   while S.Count > 0 do
     S.Pop.Free;
-end;
-
-{ TVar }
-
-constructor TVar.Create(aName: string; aValue: TFunc<Double>);
-begin
-  FName      := aName;
-  FValueFunc := aValue;
-end;
-
-constructor TVar.Create(aName: string; aValue: Double);
-begin
-  FName  := aName;
-  FValue := aValue;
-end;
-
-function TVar.GetIsFunc: Boolean;
-begin
-  Result := Assigned(FValueFunc);
-end;
-
-function TVar.GetValue: Double;
-begin
-  if GetIsFunc then
-    Result := FValueFunc
-  else
-    Result := FValue;
-end;
-
-class operator TVar.Implicit(a: TFunc<Double>): TVar;
-begin
-  Result.FValueFunc := a;
-end;
-
-class operator TVar.Implicit(a: Double): TVar;
-begin
-  Result.SetValue(a);
-end;
-
-class operator TVar.Implicit(a: TVar): Double;
-begin
-  Result := a.GetValue;
-end;
-
-procedure TVar.SetValue(const Value: Double);
-begin
-  if GetIsFunc then
-    raise Exception.Create('Error: Value is a function')
-  else
-    FValue := Value;
-end;
-
-{ TVariables }
-
-procedure TVariables.Add(Name: string; Value: Double);
-begin
-  inherited AddOrSetValue(Name.ToUpper, TVar.Create(Name, Value));
-end;
-
-procedure TVariables.Add(Name: string; Value: TFunc<Double>);
-begin
-  inherited AddOrSetValue(Name.ToUpper, TVar.Create(Name, Value));
-end;
-
-function TVariables.GetItem(const Key: string): TVar;
-begin
-  Result := inherited Items[Key.ToUpper];
-end;
-
-procedure TVariables.SetItem(const Key: string; const Value: TVar);
-begin
-  AddOrSetValue(Key.ToUpper, Value);
 end;
 
 { TError }

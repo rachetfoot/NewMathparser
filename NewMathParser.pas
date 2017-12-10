@@ -89,6 +89,36 @@ type
     function ExpressionToStack(const Expression: string): TArray<TParserItem>;
   end;
 
+  TVar = record
+  private
+    FValue    : Double;
+    FValueFunc: TFunc<Double>;
+    FName     : string;
+    function GetIsFunc: Boolean;
+    function GetValue: Double;
+    procedure SetValue(const Value: Double);
+  public
+    constructor Create(aName: string; aValue: Double); overload;
+    constructor Create(aName: string; aValue: TFunc<Double>); overload;
+    property Name: string read FName write FName;
+    property IsFunc: Boolean read GetIsFunc;
+  public
+    class operator Implicit(a: Double): TVar; overload; inline;
+    class operator Implicit(a: TFunc<Double>): TVar; overload; inline;
+    class operator Implicit(a: TVar): Double; overload; inline;
+  end;
+
+  TVariables = class(TDictionary<string, TVar>)
+  private
+    function GetItem(const Key: string): TVar;
+    procedure SetItem(const Key: string; const Value: TVar);
+  public
+    constructor Create(FillDefaults: boolean = true); reintroduce;
+    procedure Add(Name: string; Value: Double); overload;
+    procedure Add(Name: string; Value: TFunc<Double>); overload;
+    property Items[const Key: string]: TVar read GetItem write SetItem; default;
+  end;
+
   TCalculator = class(TObject)
   strict private
     FVariables  : TVariables;
@@ -114,6 +144,7 @@ type
     FExpression: string;
     FOnError   : TNotifyError;
     FVariables : TVariables;
+    FOwnsVariables: Boolean;
     FCalculator: TCalculator;
     FIsToCalc  : Boolean;
     FValidate  : TValidate;
@@ -125,7 +156,8 @@ type
     procedure DoError(AError: TError);
     procedure CreateStack;
   public
-    constructor Create;
+    constructor Create; overload;
+    constructor Create(aVariables: TVariables); overload;
     destructor Destroy; override;
     function GetLastError: TError; deprecated 'use Error';
     // dont use stream! Is quicker to save the Expressionstring
@@ -134,6 +166,7 @@ type
     property Expression: string read FExpression write SetExpression;
     property ParserResult: Double read GetParserResult;
     property Variables: TVariables read FVariables write FVariables;
+    property OwnsVariables: boolean read FOwnsVariables write FOwnsVariables;
     property OnError: TNotifyError read FOnError write FOnError;
     property Error: TError read FError;
   end;
@@ -144,17 +177,23 @@ var
   LocalFormatSettings: TFormatSettings;
 
 constructor TMathParser.Create;
+var
+  aVariables: TVariables;
 begin
-  inherited;
+  aVariables  := TVariables.Create;
+  Create(aVariables);
+  FOwnsVariables := true;
+end;
+
+constructor TMathParser.Create(aVariables: TVariables);
+begin
+  inherited Create;
   FExpression := '';
   FError.Clear;
   FIsToCalc   := False;
   FOperations := TOperation.Create;
   FMainStack  := TParserStack.Create;
-  FVariables  := TVariables.Create;
-  FVariables.Add('pi', Pi);
-  FVariables.Add('true', 1);
-  FVariables.Add('false', 0);
+  FVariables  := aVariables;
   FCalculator := TCalculator.Create(FOperations, FVariables, @FError);
 
   AddOperation(FOperations);
@@ -180,7 +219,8 @@ begin
   FCalculator.Free;
   FMainStack.Free;
 
-  FVariables.Free;
+  if FOwnsVariables then
+    FVariables.Free;
   FOperations.Free;
   inherited;
 end;
@@ -769,6 +809,89 @@ begin
   if (FTmpStack.Count > 0) and (FTmpStack.Peek.TypeStack = tsFunction) then
     FPStack.Push(FTmpStack.Pop);
   Current.Free;
+end;
+
+{ TVar }
+
+constructor TVar.Create(aName: string; aValue: TFunc<Double>);
+begin
+  FName      := aName;
+  FValueFunc := aValue;
+end;
+
+constructor TVar.Create(aName: string; aValue: Double);
+begin
+  FName  := aName;
+  FValue := aValue;
+end;
+
+function TVar.GetIsFunc: Boolean;
+begin
+  Result := Assigned(FValueFunc);
+end;
+
+function TVar.GetValue: Double;
+begin
+  if GetIsFunc then
+    Result := FValueFunc
+  else
+    Result := FValue;
+end;
+
+class operator TVar.Implicit(a: TFunc<Double>): TVar;
+begin
+  Result.FValueFunc := a;
+end;
+
+class operator TVar.Implicit(a: Double): TVar;
+begin
+  Result.SetValue(a);
+end;
+
+class operator TVar.Implicit(a: TVar): Double;
+begin
+  Result := a.GetValue;
+end;
+
+procedure TVar.SetValue(const Value: Double);
+begin
+  if GetIsFunc then
+    raise Exception.Create('Error: Value is a function')
+  else
+    FValue := Value;
+end;
+
+{ TVariables }
+
+procedure TVariables.Add(Name: string; Value: Double);
+begin
+  inherited AddOrSetValue(Name.ToUpper, TVar.Create(Name, Value));
+end;
+
+procedure TVariables.Add(Name: string; Value: TFunc<Double>);
+begin
+  inherited AddOrSetValue(Name.ToUpper, TVar.Create(Name, Value));
+end;
+
+constructor TVariables.Create(FillDefaults: boolean);
+begin
+  inherited Create;
+
+  if FillDefaults then begin
+    Add('pi', Pi);
+    Add('true', 1);
+    Add('false', 0);
+  end;
+end;
+
+function TVariables.GetItem(const Key: string): TVar;
+begin
+  Result := inherited Items[Key.ToUpper];
+end;
+
+procedure TVariables.SetItem(const Key: string; const Value: TVar);
+begin
+  AddOrSetValue(Key.ToUpper, Value);
 end;
 
 { TCalculator }
