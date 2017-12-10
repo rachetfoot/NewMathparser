@@ -24,6 +24,7 @@ type
   published
     procedure Test1;
     procedure TestDoubleOp;
+    procedure TestAssignment;
     procedure TestBrackekts;
     procedure TestAdd;
     procedure TestSub;
@@ -581,6 +582,21 @@ begin
     Expected    := 1;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, 0.0001, Expression);
+  end;
+end;
+
+procedure TestTMathParser.TestAssignment;
+var
+  Expected, ReturnValue: Double;
+begin
+  with FMathParser do
+  begin
+    Variables['a'] := 6;
+    Expression  := 'min(10,a) + max(2, a = 5+5 && 11) + a';
+    Expected    := 28;
+    ReturnValue := ParserResult;
+    CheckEquals(Expected, ReturnValue, 0.0001, Expression);
+    CheckEquals(11, Variables['a'], 0.0001, 'a');
   end;
 end;
 

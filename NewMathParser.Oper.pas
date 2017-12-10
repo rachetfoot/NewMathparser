@@ -2,9 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-/// Viel geändert von Jens Biermann am 07.02.2012
-/// Viel geändert von Jens Biermann am 29.01.2015
-/// Änderungen von Jens Biermann am 23.08.2016
+/// Viel geï¿½ndert von Jens Biermann am 07.02.2012
+/// Viel geï¿½ndert von Jens Biermann am 29.01.2015
+/// ï¿½nderungen von Jens Biermann am 23.08.2016
 /// Items in TVariables - Jens Biermann am 10.09.2016
 
 unit NewMathParser.Oper;
@@ -33,6 +33,7 @@ const
   cErrorSeparator             = 13;
   cErrorOperatorNeedArgument  = 14;
   cErrorToManyArgs            = 15;
+  cErrorAssignmentError       = 17;
   // Calc errors:
   cErrorCalc           = 100;
   cErrorDivByZero      = 101;
@@ -116,6 +117,7 @@ procedure AddTrigonometryDeg(AOperation: TOperation);
 procedure AddLogarithm(AOperation: TOperation);
 procedure AddComparisons(AOperation: TOperation);
 procedure AddLogic(AOperation: TOperation);
+procedure AddAssignment(AOperation: TOperation);
 
 type
 
@@ -129,8 +131,8 @@ type
     FArgumentsCount: Integer;
     FTextPos       : Integer;
   public
-    constructor Create(aTypeStack: TTypeStack; APos: Integer; aName: string = ''); overload;
-    constructor Create(aValue: Double; APos: Integer); overload;
+    constructor Create(aTypeStack: TTypeStack; APos: Integer; aName: string); overload;
+    constructor Create(aValue: Double; APos: Integer; aName: string); overload;
     constructor Create(aItem: TParserItem); overload;
     procedure Assign(Source: TObject);
     procedure Write(S: TStream);
@@ -814,6 +816,15 @@ begin
     end));
 end;
 
+procedure AddAssignment(AOperation: TOperation);
+begin
+  AOperation.Add(TOperator.Create(0.2, 2, '=',
+    function(Values: TArray<Double>): Double
+    begin
+      Result := Values[1];
+    end));
+end;
+
 { TParserItem }
 
 constructor TParserItem.Create(aTypeStack: TTypeStack; APos: Integer; aName: string);
@@ -825,12 +836,12 @@ begin
   FTextPos   := APos;
 end;
 
-constructor TParserItem.Create(aValue: Double; APos: Integer);
+constructor TParserItem.Create(aValue: Double; APos: Integer; aName: string);
 begin
   inherited Create;
   FValue     := aValue;
   FTypeStack := tsValue;
-  FName      := '';
+  FName      := aName;
   FTextPos   := APos;
 end;
 
@@ -1019,6 +1030,8 @@ begin
       Result := 'Separator cannot be placed here at position %1:d';
     cErrorOperatorNeedArgument:
       Result := 'Operator must be followed by argument at position %1:d';
+    cErrorAssignmentError:
+      Result := 'No variable found to assign value to at position %1:d';
 
     cErrorCalc:
       Result := 'Invalid operation at position %1:d';

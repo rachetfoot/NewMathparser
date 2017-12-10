@@ -164,6 +164,7 @@ begin
   AddLogarithm(FOperations);
   AddComparisons(FOperations);
   AddLogic(FOperations);
+  AddAssignment(FOperations);
 
   FValidate := TValidate.Create(FMainStack, FOperations, @FError);
   FParser   := TParser.Create(FOperations, @FError);
@@ -432,6 +433,13 @@ begin
     FError^.Code     := cErrorOperatorNeedArgument;
     FError^.Position := FStack[Pos].TextPos;
   end;
+
+  if (FStack[Pos].Name = '=') and ((FStack[Pos - 1].TypeStack <> tsVariable)
+  or ((Pos > 1) and not (FStack[Pos - 2].TypeStack in [tsLeftBracket, tsSeparator]))) then
+  begin
+    FError^.Code     := cErrorAssignmentError;
+    FError^.Position := FStack[Pos].TextPos;
+  end;
 end;
 
 procedure TValidate.ValidateRightBracket(const Pos: Integer);
@@ -582,7 +590,7 @@ begin
   FParsePosition := FParsePosition + Length(s);
 
   if TryStrToFloat(s, v, LocalFormatSettings) then
-    FStack.Add(TParserItem.Create(v, FParsePosition))
+    FStack.Add(TParserItem.Create(v, FParsePosition, ''))
   else
   begin
     FError^.Code     := cErrorInvalidFloat;
@@ -611,7 +619,7 @@ begin
 
         ';', ',':
           begin
-            Add(TParserItem.Create(tsSeparator, FParsePosition));
+            Add(TParserItem.Create(tsSeparator, FParsePosition, ''));
             Inc(FParsePosition);
           end;
 
@@ -806,12 +814,15 @@ var
   R    : TParserItem;
   i    : Integer;
   Error: Integer;
+  Result: double;
+  LeftVarName: string;
 begin
   FValues.Clear;
   for i := 0 to ACurrent.ArgumentsCount - 1 do
   begin
     R := FResultStack.Pop;
     FValues.Add(R.Value);
+    LeftVarName := R.Name;
     R.Free;
   end;
 
@@ -819,8 +830,12 @@ begin
   O     := FOperations[ACurrent.Name];
   Error := O.Error(FValues.ToArray);
   if Error = cNoError then
-    FResultStack.Push(TParserItem.Create(O.Func(FValues.ToArray), ACurrent.TextPos))
-  else
+  begin
+    Result := O.Func(FValues.ToArray);
+    if (ACurrent.Name = '=') then
+      FVariables.AddOrSetValue(LeftVarName.ToUpper, TVar.Create(LeftVarName, Result));
+    FResultStack.Push(TParserItem.Create(Result, ACurrent.TextPos, ACurrent.Name));
+  end else
   begin
     FError^.Code     := Error;
     FError^.Position := ACurrent.TextPos;
@@ -839,7 +854,7 @@ var
   aValue: TVar;
 begin
   if FVariables.TryGetValue(Current.Name.ToUpper, aValue) then
-    FResultStack.Push(TParserItem.Create(aValue, Current.TextPos))
+    FResultStack.Push(TParserItem.Create(aValue, Current.TextPos, Current.Name))
   else
   begin
     FError^.Code     := cErrorUnknownName;
