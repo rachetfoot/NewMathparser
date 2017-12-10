@@ -117,14 +117,14 @@ var
 begin
   with FMathParser do
   begin
-    Expression  := 'Max(3, 4, 4,5)';
+    Expression  := 'Max(3, 4, 4.5)';
     Expected    := 4.5;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
   end;
   with FMathParser do
   begin
-    Expression         := 'Max(4,5)';
+    Expression         := 'Max(4.5)';
     R                  := ParserResult;
     EExpected.Code     := cErrorNotEnoughArgs;
     EExpected.Position := 1;
@@ -141,14 +141,14 @@ var
 begin
   with FMathParser do
   begin
-    Expression  := 'Min(3, 4, 4,5)';
+    Expression  := 'Min(3, 4, 4.5)';
     Expected    := 3;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
   end;
   with FMathParser do
   begin
-    Expression         := 'Min(4,5)';
+    Expression         := 'Min(4.5)';
     R                  := ParserResult;
     EExpected.Code     := cErrorNotEnoughArgs;
     EExpected.Position := 1;
@@ -255,7 +255,7 @@ begin
   end;
   with FMathParser do
   begin
-    Expression         := '25 + Max(3,4)';
+    Expression         := '25 + Max(3.4)';
     R                  := ParserResult;
     EExpected.Code     := cErrorNotEnoughArgs;
     EExpected.Position := 6;
@@ -604,7 +604,7 @@ var
 begin
   with FMathParser do
   begin
-    Expression  := 'Ceil(2,1)';
+    Expression  := 'Ceil(2.1)';
     Expected    := 3;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
@@ -612,7 +612,7 @@ begin
 
   with FMathParser do
   begin
-    Expression  := 'Ceil(-2,1)';
+    Expression  := 'Ceil(-2.1)';
     Expected    := -2;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
@@ -967,8 +967,8 @@ begin
     Expression := '(5,,)';
     R          := ParserResult;
 
-    EExpected.Code     := cErrorRightBracket;
-    EExpected.Position := 5;
+    EExpected.Code     := cErrorSeparatorNeedArgument;
+    EExpected.Position := 4;
     EReturnValue       := Error;
     CheckError(EExpected, FResultError, Expression);
     CheckError(EExpected, EReturnValue, Expression);
@@ -1219,7 +1219,7 @@ begin
       finally
         MP.Free;
       end;
-    end, 10, 35);
+    end, 10, 45);
 end;
 
 procedure TestTMathParser.TestPower;
@@ -1297,7 +1297,7 @@ var
 begin
   with FMathParser do
   begin
-    Expression  := 'RoundTo(-25,346 , -2)';
+    Expression  := 'RoundTo(-25.346 , -2)';
     Expected    := -25.35;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
@@ -1310,14 +1310,14 @@ var
 begin
   with FMathParser do
   begin
-    Expression  := 'Sign(50,22)';
+    Expression  := 'Sign(50.22)';
     Expected    := 1;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
   end;
   with FMathParser do
   begin
-    Expression  := 'Sign(-50,22)';
+    Expression  := 'Sign(-50.22)';
     Expected    := -1;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
@@ -1461,7 +1461,7 @@ var
 begin
   with FMathParser do
   begin
-    Expression  := 'Sum(3, 2,55, 3.2)';
+    Expression  := 'Sum(3, 2.55, 3.2)';
     Expected    := 8.75;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, 0.001, Expression);
