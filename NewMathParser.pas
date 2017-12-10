@@ -2,9 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-/// Viel geï¿½ndert von Jens Biermann am 07.02.2012
-/// Viel geï¿½ndert von Jens Biermann am 29.01.2015
-/// ï¿½nderungen von Jens Biermann am 23.08.2016
+/// Viel geändert von Jens Biermann am 07.02.2012
+/// Viel geändert von Jens Biermann am 29.01.2015
+/// Änderungen von Jens Biermann am 23.08.2016
 /// TParserStack to TList and Bugfix 10.09.2016
 
 unit NewMathParser;
@@ -71,10 +71,6 @@ type
 
   TParser = class(TObject)
   strict private
-  const
-    Numbers = ['0' .. '9'];
-    Letters = ['a' .. 'z'];
-  strict private
     FStack        : TList<TParserItem>;
     FError        : PError;
     FOperations   : TOperation;
@@ -84,6 +80,9 @@ type
     procedure ParseNumbers;
     procedure ParseFunctions;
     procedure Parse;
+    function ItemNameToStackType(AName: string): TTypeStack;
+  private
+    procedure ParseOperators;
   public
     constructor Create(AOperations: TOperation; AError: PError);
     destructor Destroy; override;
@@ -161,6 +160,7 @@ begin
   AddTrigonometry(FOperations);
   AddTrigonometryDeg(FOperations);
   AddLogarithm(FOperations);
+  AddComparisons(FOperations);
 
   FValidate := TValidate.Create(FMainStack, FOperations, @FError);
   FParser   := TParser.Create(FOperations, @FError);
@@ -388,7 +388,7 @@ var
 begin
   for i := FStack.Count - 2 downto 0 do
     if (FStack[i].TypeStack in Types2) and (FStack[i + 1].TypeStack in Types1) then
-      FStack.Insert(i + 1, TParserItem.Create('*', FStack[i].TextPos));
+      FStack.Insert(i + 1, TParserItem.Create(tsOperator, FStack[i].TextPos, '*'));
 end;
 
 procedure TValidate.Loop;
@@ -416,7 +416,7 @@ procedure TValidate.ValidateOperator(const Pos: Integer);
 begin
   if (Pos = 0) or (FStack[Pos - 1].TypeStack in [tsOperator, tsLeftBracket, tsSeparator]) then
   begin
-    if (FStack[Pos].Name.Length = 1) and CharInSet(FStack[Pos].Name[1], ['/', '*', '^', '%']) then
+    if (FStack[Pos].Name.Length = 1) and CharInSet(FStack[Pos].Name[1], FOperations.OpChars-['-', '+']) then
     begin
       FError^.Code     := cErrorOperator;
       FError^.Position := FStack[Pos].TextPos;
@@ -487,6 +487,41 @@ begin
   inherited;
 end;
 
+procedure TParser.ParseOperators;
+var
+  S : string;
+  Op: TOperator;
+
+  function OperationChars: string;
+  var
+    i: Integer;
+  begin
+    Result := '';
+    for i  := FParsePosition to Length(FExpression) do
+      if CharInSet(FExpression[i], FOperations.OpChars) then
+        Result := Result + FExpression[i]
+      else
+        Break;
+  end;
+
+begin
+  S := OperationChars;
+  while Length(S) > 0 do begin
+    Op := FOperations[S];
+    if Assigned(Op) then begin
+      FStack.Add(TParserItem.Create(ItemNameToStackType(Op.Name), FParsePosition, Op.Name));
+      FParsePosition := FParsePosition + Length(S);
+      Break;
+    end;
+    S := Copy(S, 0, S.Length-1);
+  end;
+
+  if Length(S) = 0 then begin
+    FError^.Code     := cErrorInvalidOperator;
+    FError^.Position := FParsePosition;
+  end;
+end;
+
 procedure TParser.ParseFunctions;
 var
   S : string;
@@ -510,7 +545,7 @@ begin
   begin
     Op := FOperations[S];
     if Assigned(Op) then
-      FStack.Add(TParserItem.Create(Op.Name, FParsePosition))
+      FStack.Add(TParserItem.Create(ItemNameToStackType(Op.Name), FParsePosition, Op.Name))
     else
       FStack.Add(TParserItem.Create(tsVariable, FParsePosition, S));
 
@@ -562,23 +597,11 @@ begin
     with FStack do
     begin
       case FExpression[FParsePosition] of
-        '(', '{', '[':
+        '(', '{', '[', ')', '}', ']':
           begin
-            Add(TParserItem.Create(FExpression[FParsePosition], FParsePosition));
+            Add(TParserItem.Create(ItemNameToStackType(FExpression[FParsePosition]), FParsePosition, FExpression[FParsePosition]));
             Inc(FParsePosition);
           end;
-
-        ')', '}', ']':
-          begin
-            Add(TParserItem.Create(FExpression[FParsePosition], FParsePosition));
-            Inc(FParsePosition);
-          end;
-
-        'a' .. 'z', '_':
-          ParseFunctions;
-
-        '0' .. '9', '.':
-          ParseNumbers;
 
         ';', ',':
           begin
@@ -586,17 +609,18 @@ begin
             Inc(FParsePosition);
           end;
 
-        '-', '+', '/', '*', '^', '%':
-          begin
-            Add(TParserItem.Create(FExpression[FParsePosition], FParsePosition));
-            Inc(FParsePosition);
-          end;
-
         ' ':
           Inc(FParsePosition);
 
       else
-        begin
+        if CharInSet(FExpression[FParsePosition], ['_'] + Letters) then begin
+          ParseFunctions;
+        end else
+        if CharInSet(FExpression[FParsePosition], ['.'] + Numbers) then begin
+          ParseNumbers;
+        end else if CharInSet(FExpression[FParsePosition], FOperations.OpChars) then begin
+          ParseOperators;
+        end else begin
           FError^.Code     := cErrorInvalidChar;
           FError^.Position := FParsePosition;
         end;
@@ -629,6 +653,18 @@ begin
   FStack.Clear;
   Parse;
   Result := FStack.ToArray;
+end;
+
+function TParser.ItemNameToStackType(AName: string): TTypeStack;
+begin
+  if (Length(AName) = 1) and (AName[1] = '(') then
+    Result := tsLeftBracket
+  else if (Length(AName) = 1) and (AName[1] = ')') then
+    Result := tsRightBracket
+  else if CharInSet(AName[1], FOperations.OpChars) and Assigned(FOperations[AName]) then
+    Result := tsOperator
+  else
+    Result := tsFunction;
 end;
 
 { TPostProzess_Priority }
@@ -694,7 +730,7 @@ end;
 
 procedure TPriority.MoveOperator(Current: TParserItem);
 var
-  Prio: Integer;
+  Prio: Double;
 begin
   Prio := FOperations[Current.Name].Priority;
   with FTmpStack do

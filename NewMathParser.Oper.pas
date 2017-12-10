@@ -11,7 +11,7 @@ unit NewMathParser.Oper;
 
 interface
 
-uses System.Generics.Collections, System.SysUtils, System.Classes;
+uses System.Classes, System.Generics.Collections, System.SysUtils;
 
 const
   cNoError = 0;
@@ -22,6 +22,7 @@ const
   cErrorUnknownName  = 3;
   cErrorInvalidFloat = 4;
   cErrorOperator     = 5;
+  cErrorInvalidOperator  = 16;
   // cErrorFxNeedLeftBracket     = 6; deprecated
   cErrorNotEnoughArgs         = 7;
   cErrorSeparatorNeedArgument = 8;
@@ -38,6 +39,10 @@ const
   cErrorPower          = 102;
   cErrorFxInvalidValue = 103;
   cErrorTan            = 104;
+
+const
+  Numbers = ['0' .. '9'];
+  Letters = ['a' .. 'z'];
 
 type
 
@@ -64,28 +69,33 @@ type
   TOperator = class(TObject)
   private
     FErrorFunc: TErrorFunc;
-    FPriority : Integer;
+    FPriority : Double;
     FArguments: Integer;
     FName     : string;
     FFunc     : TOpFunc;
   public
-    constructor Create(aPriority: Integer; aArguments: Integer; aName: string); overload;
-    constructor Create(aPriority: Integer; aArguments: Integer; aName: string; aOpF: TOpFunc); overload;
-    constructor Create(aPriority: Integer; aArguments: Integer; aName: string; aOpF: TOpFunc; aIsError: TErrorFunc);
+    constructor Create(aPriority: Double; aArguments: Integer; aName: string); overload;
+    constructor Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc); overload;
+    constructor Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc; aIsError: TErrorFunc);
       overload;
     function Error(Values: TArray<Double>): Integer;
     property Name: string read FName write FName;
     property Func: TOpFunc read FFunc write FFunc;
-    property Priority: Integer read FPriority write FPriority;
+    property Priority: Double read FPriority write FPriority;
     property Arguments: Integer read FArguments write FArguments;
   end;
 
   TOperation = class(TObjectList<TOperator>)
+  private type
+    TCharSet = set of ansichar;
   private
+    FOpChars: TCharSet;
     procedure AddOpNone;
     procedure AddOpNeg;
     function ValidVariableName(Name: string): Boolean;
     function GetOp(aName: string): TOperator;
+    procedure HandleAddedItems(Sender: TObject; const Item: TOperator;
+      Action: TCollectionNotification);
   public
     constructor Create;
     // destructor Destroy; override;
@@ -94,6 +104,7 @@ type
     function Contains(Name: string): Boolean;
     function RenameOperation(CurrentName, NewName: string): Boolean;
     property Op[aName: string]: TOperator read GetOp; default;
+    property OpChars: TCharSet read FOpChars write FOpChars;
   end;
 
 procedure AddOperation(AOperation: TOperation);
@@ -114,7 +125,6 @@ type
     FArgumentsCount: Integer;
     FTextPos       : Integer;
   public
-    constructor Create(AName: string; APos: Integer); overload;
     constructor Create(aTypeStack: TTypeStack; APos: Integer; aName: string = ''); overload;
     constructor Create(aValue: Double; APos: Integer); overload;
     constructor Create(aItem: TParserItem); overload;
@@ -166,7 +176,7 @@ uses
 
 { TOperator }
 
-constructor TOperator.Create(aPriority: Integer; aArguments: Integer; aName: string);
+constructor TOperator.Create(aPriority: Double; aArguments: Integer; aName: string);
 begin
   inherited Create;
   FPriority  := aPriority;
@@ -174,14 +184,14 @@ begin
   FName      := aName;
 end;
 
-constructor TOperator.Create(aPriority: Integer; aArguments: Integer; aName: string; aOpF: TOpFunc);
+constructor TOperator.Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc);
 begin
   Create(aPriority, aArguments, aName);
   FFunc      := aOpF;
   FErrorFunc := nil;
 end;
 
-constructor TOperator.Create(aPriority: Integer; aArguments: Integer; aName: string; aOpF: TOpFunc; aIsError: TErrorFunc);
+constructor TOperator.Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc; aIsError: TErrorFunc);
 begin
   Create(aPriority, aArguments, aName, aOpF);
   FErrorFunc := aIsError;
@@ -200,6 +210,9 @@ end;
 constructor TOperation.Create;
 begin
   inherited Create(True);
+
+  OnNotify := HandleAddedItems;
+
   AddOpNone;
   AddOpNeg;
 end;
@@ -228,6 +241,19 @@ begin
       Exit(iP);
 
   Result := nil;
+end;
+
+procedure TOperation.HandleAddedItems(Sender: TObject; const Item: TOperator;
+  Action: TCollectionNotification);
+var
+  c: Char;
+begin
+  if Action = cnAdded then begin
+    for c in Item.Name do
+      if not CharInSet(c, Numbers + Letters) then
+
+      Include(FOpChars, AnsiChar(c));
+  end;
 end;
 
 function TOperation.RenameOperation(CurrentName, NewName: string): Boolean;
@@ -262,11 +288,11 @@ begin
     Exit; // ex: 5E3 = 5 * 10*10*10
   if IndexOfName(Name) <> -1 then
     Exit;
-  if not CharInSet(Name[1], ['_', 'a' .. 'z']) then
+  if not CharInSet(Name[1], ['_'] + Letters) then
     Exit;
 
   for i := 2 to Length(Name) do
-    if not CharInSet(Name[i], ['_', 'a' .. 'z', '0' .. '9']) then
+    if not CharInSet(Name[i], ['_'] + Letters + Numbers) then
       Exit(True);
 end;
 
@@ -733,28 +759,6 @@ begin
   Self.Assign(aItem);
 end;
 
-constructor TParserItem.Create(AName: string; APos: Integer);
-begin
-  inherited Create;
-  FName    := AName;
-  FTextPos := APos;
-  if (Length(AName) = 1) then
-  begin
-    case AName[1] of
-      '-', '+', '/', '*', '^', '%':
-        FTypeStack := tsOperator;
-      '(':
-        FTypeStack := tsLeftBracket;
-      ')':
-        FTypeStack := tsRightBracket;
-    else
-      FTypeStack := tsFunction;
-    end;
-  end
-  else
-    FTypeStack := tsFunction;
-end;
-
 procedure TParserItem.Assign(Source: TObject);
 begin
   if Source is TParserItem then
@@ -914,6 +918,8 @@ begin
       Result := 'Invalid float number';
     cErrorOperator:
       Result := 'Operator cannot be placed here';
+    cErrorInvalidOperator:
+      Result := 'Invalid operator';
     cErrorNotEnoughArgs:
       Result := 'Not enough arguments or operands';
     cErrorSeparatorNeedArgument:
