@@ -955,7 +955,7 @@ end;
 
 function TVariables.GetItem(const Key: string): TVar;
 begin
-  Result := Self.Items[Key.ToUpper];
+  Result := inherited Items[Key.ToUpper];
 end;
 
 procedure TVariables.SetItem(const Key: string; const Value: TVar);
