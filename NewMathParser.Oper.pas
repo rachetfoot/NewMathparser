@@ -2,9 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-/// Viel geï¿½ndert von Jens Biermann am 07.02.2012
-/// Viel geï¿½ndert von Jens Biermann am 29.01.2015
-/// ï¿½nderungen von Jens Biermann am 23.08.2016
+/// Viel geändert von Jens Biermann am 07.02.2012
+/// Viel geändert von Jens Biermann am 29.01.2015
+/// Änderungen von Jens Biermann am 23.08.2016
 /// Items in TVariables - Jens Biermann am 10.09.2016
 
 unit NewMathParser.Oper;
@@ -68,28 +68,28 @@ type
 
   TArgStack = TArray<TFunc<Double>>;
 
-  TOpFunc    = reference to function(Values: TArgStack): Double;
-  TErrorFunc = reference to function(Values: TArgStack): Integer;
+  TOpFuncLazyResolution    = reference to function(Values: TArgStack): Double;
+  TErrorFuncLazyResolution = reference to function(Values: TArgStack): Integer;
 
-  TOpFunc_Legacy    = reference to function(Values: TArray<Double>): Double;
-  TErrorFunc_Legacy = reference to function(Values: TArray<Double>): Integer;
+  TOpFunc    = reference to function(Values: TArray<Double>): Double;
+  TErrorFunc = reference to function(Values: TArray<Double>): Integer;
 
   TOperator = class(TObject)
   private
-    FErrorFunc: TErrorFunc;
+    FErrorFunc: TErrorFuncLazyResolution;
     FPriority : Double;
     FArguments: Integer;
     FName     : string;
-    FFunc     : TOpFunc;
+    FFunc     : TOpFuncLazyResolution;
   public
     constructor Create(aPriority: Double; aArguments: Integer; aName: string); overload;
+    constructor Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFuncLazyResolution); overload;
+    constructor Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFuncLazyResolution; aIsError: TErrorFuncLazyResolution); overload;
     constructor Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc); overload;
     constructor Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc; aIsError: TErrorFunc); overload;
-    constructor Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc_Legacy); overload;
-    constructor Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc_Legacy; aIsError: TErrorFunc_Legacy); overload;
     function Error(Values: TArgStack): Integer;
     property Name: string read FName write FName;
-    property Func: TOpFunc read FFunc write FFunc;
+    property Func: TOpFuncLazyResolution read FFunc write FFunc;
     property Priority: Double read FPriority write FPriority;
     property Arguments: Integer read FArguments write FArguments;
   end;
@@ -176,20 +176,20 @@ begin
   FName      := aName;
 end;
 
-constructor TOperator.Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc);
+constructor TOperator.Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFuncLazyResolution);
 begin
   Create(aPriority, aArguments, aName);
   FFunc      := aOpF;
   FErrorFunc := nil;
 end;
 
-constructor TOperator.Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc; aIsError: TErrorFunc);
+constructor TOperator.Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFuncLazyResolution; aIsError: TErrorFuncLazyResolution);
 begin
   Create(aPriority, aArguments, aName, aOpF);
   FErrorFunc := aIsError;
 end;
 
-constructor TOperator.Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc_Legacy);
+constructor TOperator.Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc);
 begin
   Create(aPriority, aArguments, aName);
   FFunc      := function (ArgStack: TArgStack): Double
@@ -207,7 +207,7 @@ begin
   FErrorFunc := nil;
 end;
 
-constructor TOperator.Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc_Legacy; aIsError: TErrorFunc_Legacy);
+constructor TOperator.Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc; aIsError: TErrorFunc);
 begin
   Create(aPriority, aArguments, aName, aOpF);
   FErrorFunc := function (ArgStack: TArgStack): Integer
