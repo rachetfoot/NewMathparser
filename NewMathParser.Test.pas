@@ -612,6 +612,48 @@ begin
     CheckEquals(Expected, ReturnValue, 0.0001, Expression);
     CheckEquals(11, Variables['a'], 0.0001, 'a');
   end;
+  with FMathParser do
+  begin
+    Variables['b'] := 6;
+    Expression  := '1 && (b=1) && b || b';
+    Expected    := 1;
+    ReturnValue := ParserResult;
+    CheckEquals(Expected, ReturnValue, 0.0001, Expression);
+    CheckEquals(1, Variables['b'], 0.0001, 'a');
+  end;
+  with FMathParser do
+  begin
+    Variables['b'] := 6;
+    Expression  := '0 && (b=1) && b || b';
+    Expected    := 6;
+    ReturnValue := ParserResult;
+    CheckEquals(Expected, ReturnValue, 0.0001, Expression);
+    CheckEquals(6, Variables['b'], 0.0001, 'a');
+  end;
+  with FMathParser do
+  begin
+    Variables['b'] := 6;
+    Expression  := 'if(1>0, x=10) && x || x';
+    Expected    := 10;
+    ReturnValue := ParserResult;
+    CheckEquals(Expected, ReturnValue, 0.0001, Expression);
+  end;
+  with FMathParser do
+  begin
+    Variables['b'] := 6;
+    Expression  := 'if(1>0, x=10, x=-10) && x || x';
+    Expected    := 10;
+    ReturnValue := ParserResult;
+    CheckEquals(Expected, ReturnValue, 0.0001, Expression);
+  end;
+  with FMathParser do
+  begin
+    Variables['b'] := 6;
+    Expression  := 'if(1<=0, x=10, x=-10) && x || x';
+    Expected    := -10;
+    ReturnValue := ParserResult;
+    CheckEquals(Expected, ReturnValue, 0.0001, Expression);
+  end;
 end;
 
 procedure TestTMathParser.TestBrackekts;

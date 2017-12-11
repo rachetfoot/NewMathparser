@@ -66,8 +66,13 @@ type
     property Name: string read FName write FName;
   end;
 
-  TOpFunc    = reference to function(Values: TArray<Double>): Double;
-  TErrorFunc = reference to function(Values: TArray<Double>): Integer;
+  TArgStack = TArray<TFunc<Double>>;
+
+  TOpFunc    = reference to function(Values: TArgStack): Double;
+  TErrorFunc = reference to function(Values: TArgStack): Integer;
+
+  TOpFunc_Legacy    = reference to function(Values: TArray<Double>): Double;
+  TErrorFunc_Legacy = reference to function(Values: TArray<Double>): Integer;
 
   TOperator = class(TObject)
   private
@@ -79,9 +84,10 @@ type
   public
     constructor Create(aPriority: Double; aArguments: Integer; aName: string); overload;
     constructor Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc); overload;
-    constructor Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc; aIsError: TErrorFunc);
-      overload;
-    function Error(Values: TArray<Double>): Integer;
+    constructor Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc; aIsError: TErrorFunc); overload;
+    constructor Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc_Legacy); overload;
+    constructor Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc_Legacy; aIsError: TErrorFunc_Legacy); overload;
+    function Error(Values: TArgStack): Integer;
     property Name: string read FName write FName;
     property Func: TOpFunc read FFunc write FFunc;
     property Priority: Double read FPriority write FPriority;
@@ -123,23 +129,34 @@ type
 
   TTypeStack = (tsValue, tsOperator, tsFunction, tsLeftBracket, tsRightBracket, tsSeparator, tsVariable);
 
+  TParserValueFunc = function(ArgStack: TFunc<Double>): double;
+
   TParserItem = class
   strict private
     FValue         : Double;
+    FValueFunc     : TFunc<Double>;
     FTypeStack     : TTypeStack;
     FName          : string;
     FArgumentsCount: Integer;
     FTextPos       : Integer;
+    FChildren      : TArray<TParserItem>;
+    function GetIsFunc: Boolean;
+  private
+    function GetValue: Double;
+    function GetValueFunc: TFunc<Double>;
   public
     constructor Create(aTypeStack: TTypeStack; APos: Integer; aName: string); overload;
     constructor Create(aValue: Double; APos: Integer; aName: string); overload;
+    constructor Create(aValue: TFunc<Double>; APos: Integer; aName: string; aChildren: TArray<TParserItem> = []); overload;
     constructor Create(aItem: TParserItem); overload;
+    destructor Destroy; override;
     procedure Assign(Source: TObject);
     procedure Write(S: TStream);
     procedure Read(S: TStream);
     property Name: string read FName write FName;
     property ArgumentsCount: Integer read FArgumentsCount write FArgumentsCount;
-    property Value: Double read FValue write FValue;
+    property Value: Double read GetValue write FValue;
+    property ValueFunc: TFunc<Double> read GetValueFunc write FValueFunc;
     property TypeStack: TTypeStack read FTypeStack write FTypeStack;
     property TextPos: Integer read FTextPos write FTextPos;
   end;
@@ -174,7 +191,42 @@ begin
   FErrorFunc := aIsError;
 end;
 
-function TOperator.Error(Values: TArray<Double>): Integer;
+constructor TOperator.Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc_Legacy);
+begin
+  Create(aPriority, aArguments, aName);
+  FFunc      := function (ArgStack: TArgStack): Double
+  var
+    i: integer;
+    Values: TArray<Double>;
+  begin
+    SetLength(Values, Length(ArgStack));
+
+    for i := 0 to Length(ArgStack) - 1 do
+      Values[i] := ArgStack[i]();
+
+    Result := aOpF(Values);
+  end;
+  FErrorFunc := nil;
+end;
+
+constructor TOperator.Create(aPriority: Double; aArguments: Integer; aName: string; aOpF: TOpFunc_Legacy; aIsError: TErrorFunc_Legacy);
+begin
+  Create(aPriority, aArguments, aName, aOpF);
+  FErrorFunc := function (ArgStack: TArgStack): Integer
+  var
+    i: integer;
+    Values: TArray<Double>;
+  begin
+    SetLength(Values, Length(ArgStack));
+
+    for i := 0 to Length(ArgStack) - 1 do
+      Values[i] := ArgStack[i]();
+
+    Result := aIsError(Values);
+  end;
+end;
+
+function TOperator.Error(Values: TArgStack): Integer;
 begin
   if Assigned(FErrorFunc) then
     Result := FErrorFunc(Values)
@@ -760,30 +812,50 @@ end;
 procedure AddLogic(AOperation: TOperation);
 begin
   AOperation.Add(TOperator.Create(0.6, 2, '&&',
-    function(Values: TArray<Double>): Double
+    function(ArgStack: TArgStack): Double
+    var
+      Val0: Double;
     begin
-      if Values[0] <> 0 then
-        Result := Values[1]
+      Val0 := ArgStack[0]();
+      if Val0 <> 0 then
+        Result := ArgStack[1]()
       else
-        Result := Values[0];
+        Result := Val0;
     end));
 
   AOperation.Add(TOperator.Create(0.59, 2, '||',
-    function(Values: TArray<Double>): Double
+    function(ArgStack: TArgStack): Double
+    var
+      Val0: Double;
     begin
-      if Values[0] <> 0 then
-        Result := Values[0]
+      Val0 := ArgStack[0]();
+      if Val0 <> 0 then
+        Result := Val0
       else
-        Result := Values[1];
+        Result := ArgStack[1]();
     end));
 
-  AOperation.Add(TOperator.Create(0, 3, 'if',
-    function(Values: TArray<Double>): Double
+  AOperation.Add(TOperator.Create(0, -1, 'if',
+    function(ArgStack: TArgStack): Double
+    var
+      Val0: Double;
     begin
-      if Values[0] <> 0 then
-        Result := Values[1]
+      Val0 := ArgStack[0]();
+      if Val0 <> 0 then
+        Result := ArgStack[1]()
+      else if Length(ArgStack) > 2 then
+        Result := ArgStack[2]()
       else
-        Result := Values[2];
+        Result := 0;
+    end,
+    function(ArgStack: TArgStack): Integer
+    begin
+      if Length(ArgStack) < 2 then
+        Result := cErrorNotEnoughArgs
+      else if Length(ArgStack) > 3 then
+        Result := cErrorToManyArgs
+      else
+        Result := cNoError;
     end));
 
   AOperation.Add(TOperator.Create(2.5, 1, '!',
@@ -796,9 +868,9 @@ end;
 procedure AddAssignment(AOperation: TOperation);
 begin
   AOperation.Add(TOperator.Create(0.2, 2, '=',
-    function(Values: TArray<Double>): Double
+    function(ArgStack: TArgStack): Double
     begin
-      Result := Values[1];
+      Result := ArgStack[1]();
     end));
 end;
 
@@ -822,10 +894,56 @@ begin
   FTextPos   := APos;
 end;
 
+constructor TParserItem.Create(aValue: TFunc<Double>; APos: Integer; aName: string; aChildren: TArray<TParserItem>);
+begin
+  inherited Create;
+  FValueFunc := aValue;
+  FTypeStack := tsValue;
+  FName      := aName;
+  FTextPos   := APos;
+end;
+
 constructor TParserItem.Create(aItem: TParserItem);
 begin
   inherited Create;
   Self.Assign(aItem);
+end;
+
+destructor TParserItem.Destroy;
+var
+  i: Integer;
+begin
+  FValueFunc := nil;
+  for i := 0 to Length(FChildren)-1 do
+    FChildren[i].Free;
+  SetLength(FChildren, 0);
+
+  inherited;
+end;
+
+function TParserItem.GetIsFunc: Boolean;
+begin
+  Result := Assigned(FValueFunc);
+end;
+
+function TParserItem.GetValue: Double;
+begin
+  if GetIsFunc then
+    Result := FValueFunc
+  else
+    Result := FValue;
+end;
+
+function TParserItem.GetValueFunc: TFunc<Double>;
+var
+  Value: Double;
+begin
+  if GetIsFunc then
+    Result := FValueFunc
+  else begin
+    Value := FValue;
+    Result := function: Double begin Result := Value end;
+  end;
 end;
 
 procedure TParserItem.Assign(Source: TObject);
@@ -833,6 +951,7 @@ begin
   if Source is TParserItem then
   begin
     FValue          := TParserItem(Source).FValue;
+    FValueFunc      := TParserItem(Source).FValueFunc;
     FTypeStack      := TParserItem(Source).FTypeStack;
     FName           := TParserItem(Source).FName;
     FArgumentsCount := TParserItem(Source).FArgumentsCount;
@@ -862,6 +981,9 @@ var
   c     : Integer;
   StrBuf: TBytes;
 begin
+  if GetIsFunc then
+    raise Exception.Create('Cannot write value func to stream');
+
   S.WriteBuffer(FValue, SizeOf(Double));
   S.WriteBuffer(FTypeStack, SizeOf(TTypeStack));
 

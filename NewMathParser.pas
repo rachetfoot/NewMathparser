@@ -123,17 +123,16 @@ type
   strict private
     FVariables  : TVariables;
     FResultStack: TStack<TParserItem>;
-    FValues     : TList<Double>;
     FError      : PError;
     FOperations : TOperation;
     procedure StackToResult_Operation(ACurrent: TParserItem);
     procedure StackToResult(const AStack: TArray<TParserItem>);
-    function SetResult: Double;
     procedure StackToResult_Variable(Current: TParserItem);
   public
     constructor Create(AOperations: TOperation; AVariables: TVariables; AError: PError);
     destructor Destroy; override;
-    function calcResult(const AStack: TArray<TParserItem>): Double;
+    procedure MakeResultStack(const AStack: TArray<TParserItem>);
+    function Result: Double;
   end;
 
   TMathParser = class(TObject)
@@ -249,13 +248,19 @@ end;
 
 function TMathParser.GetParserResult: Double;
 begin
-  if FIsToCalc or FMainStack.Contains(tsVariable) then
+  Result := 0;
+
+  if FIsToCalc then
   begin
-    FResult := FCalculator.calcResult(FMainStack.ToArray);
+    FCalculator.MakeResultStack(FMainStack.ToArray);
     DoError(FError);
     FIsToCalc := False;
   end;
-  Result := FResult;
+
+  if FError.IsNoError then begin
+    Result := FCalculator.Result;
+    DoError(FError);
+  end;
 end;
 
 procedure TMathParser.SaveToStream(S: TStream);
@@ -904,12 +909,11 @@ begin
   FVariables   := AVariables;
   FError       := AError;
   FResultStack := TStack<TParserItem>.Create;
-  FValues      := TList<Double>.Create;
 end;
 
 destructor TCalculator.Destroy;
 begin
-  FValues.Free;
+  ClearAndFreeStack(FResultStack);
   FResultStack.Free;
   inherited;
 end;
@@ -934,77 +938,74 @@ end;
 
 procedure TCalculator.StackToResult_Operation(ACurrent: TParserItem);
 var
+  ArgStack: TArgStack;
   O    : TOperator;
-  R    : TParserItem;
   i    : Integer;
   Error: Integer;
-  Result: double;
   LeftVarName: string;
 begin
-  FValues.Clear;
-  for i := 0 to ACurrent.ArgumentsCount - 1 do
-  begin
-    R := FResultStack.Pop;
-    FValues.Add(R.Value);
-    LeftVarName := R.Name;
-    R.Free;
+  LeftVarName := '';
+
+  SetLength(ArgStack, ACurrent.ArgumentsCount);
+  for i := ACurrent.ArgumentsCount - 1 downto 0 do with FResultStack.Pop do begin
+    ArgStack[i] := ValueFunc;
+    if i = 0 then
+      LeftVarName := Name;
+    Free;
   end;
 
-  FValues.Reverse;
   O     := FOperations[ACurrent.Name];
-  Error := O.Error(FValues.ToArray);
-  if Error = cNoError then
+  FResultStack.Push(TParserItem.Create(function: double
   begin
-    Result := O.Func(FValues.ToArray);
-    if (ACurrent.Name = '=') then
-      FVariables.Add(LeftVarName.ToUpper, Result);
-    FResultStack.Push(TParserItem.Create(Result, ACurrent.TextPos, ACurrent.Name));
-  end else
-  begin
-    FError^.Code     := Error;
-    FError^.Position := ACurrent.TextPos;
-  end;
+    Error := O.Error(ArgStack);
+    if Error = cNoError then
+    begin
+      Result := O.Func(ArgStack);
+      if (ACurrent.Name = '=') then
+        FVariables.Add(LeftVarName.ToUpper, Result);
+    end else
+    begin
+      Result := 0;
+      FError^.Code     := Error;
+      FError^.Position := ACurrent.TextPos;
+    end;
+  end, ACurrent.TextPos, ACurrent.Name));
 end;
 
-function TCalculator.calcResult(const AStack: TArray<TParserItem>): Double;
+procedure TCalculator.MakeResultStack(const AStack: TArray<TParserItem>);
 begin
-  FResultStack.Clear;
+  ClearAndFreeStack(FResultStack);
   StackToResult(AStack);
-  Result := SetResult;
 end;
 
 procedure TCalculator.StackToResult_Variable(Current: TParserItem);
 var
-  aValue: TVar;
+  Value: TVar;
 begin
-  if FVariables.TryGetValue(Current.Name.ToUpper, aValue) then
-    FResultStack.Push(TParserItem.Create(aValue, Current.TextPos, Current.Name))
-  else
-  begin
-    FError^.Code     := cErrorUnknownName;
-    FError^.Position := Current.TextPos;
-    FError^.Name     := Current.Name;
-  end;
+  FResultStack.Push(TParserItem.Create(function: double begin
+    if FVariables.TryGetValue(Current.Name.ToUpper, Value) then
+      Result := Value
+    else
+    begin
+      FError^.Code     := cErrorUnknownName;
+      FError^.Position := Current.TextPos;
+      FError^.Name     := Current.Name;
+    end;
+  end, Current.TextPos, Current.Name))
 end;
 
-function TCalculator.SetResult: Double;
-var
-  R: TParserItem;
+function TCalculator.Result: Double;
 begin
   Result := 0;
   if (FResultStack.Count = 1) and FError^.IsNoError then
   begin
-    R      := FResultStack.Pop;
-    Result := R.Value;
-    R.Free;
+    Result := FResultStack.Peek.Value;
   end
   else if FError^.IsNoError then
   begin
     FError^.Code     := cInternalError;
     FError^.Position := -1;
-  end
-  else
-    ClearAndFreeStack(FResultStack);
+  end;
 end;
 
 { TParserStack }
