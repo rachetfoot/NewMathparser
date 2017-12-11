@@ -168,6 +168,7 @@ type
     property ParserResult: Double read GetParserResult;
     property Variables: TVariables read FVariables write FVariables;
     property OwnsVariables: boolean read FOwnsVariables write FOwnsVariables;
+    property Operations: TOperation read FOperations;
     property OnError: TNotifyError read FOnError write FOnError;
     property Error: TError read FError;
   end;

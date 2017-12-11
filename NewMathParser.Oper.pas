@@ -2,9 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-/// Viel geändert von Jens Biermann am 07.02.2012
-/// Viel geändert von Jens Biermann am 29.01.2015
-/// Änderungen von Jens Biermann am 23.08.2016
+/// Viel geï¿½ndert von Jens Biermann am 07.02.2012
+/// Viel geï¿½ndert von Jens Biermann am 29.01.2015
+/// ï¿½nderungen von Jens Biermann am 23.08.2016
 /// Items in TVariables - Jens Biermann am 10.09.2016
 
 unit NewMathParser.Oper;
@@ -109,7 +109,6 @@ type
   public
     constructor Create;
     // destructor Destroy; override;
-    function AddCustomOperation(Name: string; Arguments: Integer; Priority: byte): Boolean;
     function IndexOfName(aName: string): Integer;
     function Contains(Name: string): Boolean;
     function RenameOperation(CurrentName, NewName: string): Boolean;
@@ -354,17 +353,6 @@ begin
       for i := 0 to Length(ArgStack)-1 do
         Result := ArgStack[i]();
     end));
-end;
-
-function TOperation.AddCustomOperation(Name: string; Arguments: Integer; Priority: byte): Boolean;
-begin
-  Name := AnsiLowerCase(Name);
-  if ValidVariableName(Name) then
-  begin
-    Add(TOperator.Create(Priority, Arguments, Name));
-    Exit(True);
-  end;
-  Result := False;
 end;
 
 procedure AddOperation(AOperation: TOperation);
