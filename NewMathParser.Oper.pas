@@ -1058,7 +1058,7 @@ begin
     cErrorOperatorNeedArgument:
       Result := 'Operator must be followed by argument at position %1:d';
     cErrorAssignmentError:
-      Result := 'No variable found to assign value to at position %1:d';
+      Result := 'Invalid left-hand side in assignment at position %1:d';
 
     cErrorCalc:
       Result := 'Invalid operation at position %1:d';
