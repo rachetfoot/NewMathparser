@@ -51,6 +51,8 @@ type
     procedure InsertMulti;
     procedure CountArg;
     procedure CheckError;
+  private
+    procedure CheckForSubstatements;
   public
     procedure Prozess; override;
   end;
@@ -338,11 +340,11 @@ begin
   if FError^.IsNoError then
   begin
     CheckBracketError;
-    if FError.IsNoError then
-      FStack.SetArgCount;
-    CleanPlusMinus;
-    InsertMulti;
-    Loop;
+    if FError.IsNoError then CleanPlusMinus;
+    if FError.IsNoError then InsertMulti;
+    if FError.IsNoError then CheckForSubstatements;
+    if FError.IsNoError then FStack.SetArgCount;
+    if FError.IsNoError then Loop;
     if FError.IsNoError then
     begin
       CountArg;
@@ -402,6 +404,60 @@ begin
         FStack.Extract(FStack[i]).Free
       else if SameStr(FStack[i].Name, '-') then
         FStack[i].Name := 'neg';
+end;
+
+procedure TValidate.CheckForSubstatements;
+type
+  PBrackets = ^TBrackets;
+  TBrackets = record
+    StatementCount: integer;
+    LeftBracket: TParserItem;
+  end;
+
+  function NewBrackets(LeftBracket: TParserItem): PBrackets;
+  begin
+    New(Result);
+    Result^.StatementCount := 1;
+    Result^.LeftBracket := LeftBracket;
+  end;
+
+var
+  BracketsStack: TStack<PBrackets>;
+  Brackets     : PBrackets;
+  iSS          : TParserItem;
+  LeftPos      : Integer;
+begin
+  BracketsStack := TStack<PBrackets>.Create;
+  try
+    BracketsStack.Push(NewBrackets(nil));
+    for iSS in FStack.ToArray do begin
+      case iSS.TypeStack of
+        tsLeftBracket:
+          BracketsStack.Push(NewBrackets(iSS));
+
+        tsRightBracket:
+        begin
+          Brackets := BracketsStack.Peek;
+          LeftPos := FStack.IndexOf(Brackets^.LeftBracket);
+          if ((LeftPos = 0) or (FStack.Items[LeftPos-1].TypeStack <> tsFunction)) and (Brackets^.StatementCount > 1) then
+            FStack.Insert(LeftPos, TParserItem.Create(tsFunction, Brackets^.LeftBracket.TextPos, 'substatement'));
+          Dispose(BracketsStack.Pop);
+        end;
+
+        tsSeparator:
+          Inc(BracketsStack.Peek^.StatementCount);
+      end;
+    end;
+
+    if BracketsStack.Peek^.StatementCount > 1 then begin
+      FStack.Insert(0, TParserItem.Create(tsFunction, 1, 'substatement'));
+      FStack.Insert(1, TParserItem.Create(tsLeftBracket, 1, '('));
+      FStack.Add(TParserItem.Create(tsRightBracket, 1, ')'));
+    end;
+    Dispose(BracketsStack.Pop);
+  finally
+    BracketsStack.Free;
+  end;
 end;
 
 procedure TValidate.CheckBracketError;
@@ -987,6 +1043,7 @@ begin
       Result := Value
     else
     begin
+      Result           := 0;
       FError^.Code     := cErrorUnknownName;
       FError^.Position := Current.TextPos;
       FError^.Name     := Current.Name;

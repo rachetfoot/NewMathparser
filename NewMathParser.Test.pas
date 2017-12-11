@@ -24,6 +24,7 @@ type
   published
     procedure Test1;
     procedure TestDoubleOp;
+    procedure TestMultipleStatements;
     procedure TestAssignment;
     procedure TestBrackekts;
     procedure TestAdd;
@@ -596,6 +597,30 @@ begin
     Expected    := 1;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, 0.0001, Expression);
+  end;
+end;
+
+procedure TestTMathParser.TestMultipleStatements;
+var
+  Expected, ReturnValue: Double;
+begin
+  with FMathParser do
+  begin
+    Expression  := 'y = (x=3, 5)+x, if(1, y=0), y';
+    Expected    := 0;
+    ReturnValue := ParserResult;
+    CheckEquals(Expected, ReturnValue, 0.0001, Expression);
+    CheckEquals(3, Variables['x'], 0.0001, 'a');
+    CheckEquals(0, Variables['y'], 0.0001, 'a');
+  end;
+  with FMathParser do
+  begin
+    Expression  := 'y = (x=3, 5)+x, if(0, y=0), y';
+    Expected    := 8;
+    ReturnValue := ParserResult;
+    CheckEquals(Expected, ReturnValue, 0.0001, Expression);
+    CheckEquals(3, Variables['x'], 0.0001, 'a');
+    CheckEquals(8, Variables['y'], 0.0001, 'a');
   end;
 end;
 
@@ -1296,9 +1321,9 @@ begin
     begin
       MP := TMathParser.Create;
       try
-        MP.Expression := 'Max(3+5, 4, 5, a) + Min(3, 4, 5) + ((4+5)6)7 + ((4+5)6)7';
         for i := 1 to 1000 do
         begin
+          MP.Expression := 'Max(3+5, 4, 5, a) + Min(3, 4, 5) + ((4+5)6)7 + ((4+5)6)7';
           MP.Variables['a'] := 5;
           R := MP.ParserResult;  // 767
           MP.Expression := '';

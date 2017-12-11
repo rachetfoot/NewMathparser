@@ -101,6 +101,7 @@ type
     FOpChars: TCharSet;
     procedure AddOpNone;
     procedure AddOpNeg;
+    procedure AddOpBrackets;
     function ValidVariableName(Name: string): Boolean;
     function GetOp(aName: string): TOperator;
     procedure HandleAddedItems(Sender: TObject; const Item: TOperator;
@@ -139,7 +140,6 @@ type
     FName          : string;
     FArgumentsCount: Integer;
     FTextPos       : Integer;
-    FChildren      : TArray<TParserItem>;
     function GetIsFunc: Boolean;
   private
     function GetValue: Double;
@@ -147,9 +147,8 @@ type
   public
     constructor Create(aTypeStack: TTypeStack; APos: Integer; aName: string); overload;
     constructor Create(aValue: Double; APos: Integer; aName: string); overload;
-    constructor Create(aValue: TFunc<Double>; APos: Integer; aName: string; aChildren: TArray<TParserItem> = []); overload;
+    constructor Create(aValue: TFunc<Double>; APos: Integer; aName: string); overload;
     constructor Create(aItem: TParserItem); overload;
-    destructor Destroy; override;
     procedure Assign(Source: TObject);
     procedure Write(S: TStream);
     procedure Read(S: TStream);
@@ -244,6 +243,7 @@ begin
 
   AddOpNone;
   AddOpNeg;
+  AddOpBrackets;
 end;
 
 function TOperation.Contains(Name: string): Boolean;
@@ -338,6 +338,21 @@ begin
     function(Values: TArray<Double>): Double
     begin
       Result := -Values[0];
+    end));
+end;
+
+procedure TOperation.AddOpBrackets;
+begin
+  // Internal functions
+  // OpBrackets, for holding multiple statements in brackets
+  Add(TOperator.Create(0, -1, 'substatement',
+    function(ArgStack: TArgStack): Double
+    var
+      i: Integer;
+    begin
+      Result := 0;
+      for i := 0 to Length(ArgStack)-1 do
+        Result := ArgStack[i]();
     end));
 end;
 
@@ -894,7 +909,7 @@ begin
   FTextPos   := APos;
 end;
 
-constructor TParserItem.Create(aValue: TFunc<Double>; APos: Integer; aName: string; aChildren: TArray<TParserItem>);
+constructor TParserItem.Create(aValue: TFunc<Double>; APos: Integer; aName: string);
 begin
   inherited Create;
   FValueFunc := aValue;
@@ -907,18 +922,6 @@ constructor TParserItem.Create(aItem: TParserItem);
 begin
   inherited Create;
   Self.Assign(aItem);
-end;
-
-destructor TParserItem.Destroy;
-var
-  i: Integer;
-begin
-  FValueFunc := nil;
-  for i := 0 to Length(FChildren)-1 do
-    FChildren[i].Free;
-  SetLength(FChildren, 0);
-
-  inherited;
 end;
 
 function TParserItem.GetIsFunc: Boolean;
