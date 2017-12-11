@@ -765,7 +765,7 @@ end;
 
 function TParser.ExpressionToStack(const Expression: string): TArray<TParserItem>;
 begin
-  FExpression := Expression.ToLower;
+  FExpression := Expression;
   FStack.Clear;
   Parse;
   Result := FStack.ToArray;
@@ -927,12 +927,12 @@ end;
 
 procedure TVariables.Add(Name: string; Value: Double);
 begin
-  inherited AddOrSetValue(Name.ToUpper, TVar.Create(Name, Value));
+  inherited AddOrSetValue(Name, TVar.Create(Name, Value));
 end;
 
 procedure TVariables.Add(Name: string; Value: TFunc<Double>);
 begin
-  inherited AddOrSetValue(Name.ToUpper, TVar.Create(Name, Value));
+  inherited AddOrSetValue(Name, TVar.Create(Name, Value));
 end;
 
 constructor TVariables.Create(FillDefaults: boolean);
@@ -948,12 +948,12 @@ end;
 
 function TVariables.GetItem(const Key: string): TVar;
 begin
-  Result := inherited Items[Key.ToUpper];
+  Result := inherited Items[Key];
 end;
 
 procedure TVariables.SetItem(const Key: string; const Value: TVar);
 begin
-  AddOrSetValue(Key.ToUpper, Value);
+  AddOrSetValue(Key, Value);
 end;
 
 { TCalculator }
@@ -1018,7 +1018,7 @@ begin
     begin
       Result := O.Func(ArgStack);
       if (ACurrent.Name = '=') then
-        FVariables.Add(LeftVarName.ToUpper, Result);
+        FVariables.Add(LeftVarName, Result);
     end else
     begin
       Result := 0;
@@ -1039,7 +1039,7 @@ var
   Value: TVar;
 begin
   FResultStack.Push(TParserItem.Create(function: double begin
-    if FVariables.TryGetValue(Current.Name.ToUpper, Value) then
+    if FVariables.TryGetValue(Current.Name, Value) then
       Result := Value
     else
     begin

@@ -1613,7 +1613,7 @@ var
 begin
   with FMathParser do
   begin
-    Variables.Add('A', 5);
+    Variables.Add('a', 5);
     Variables.Add('b', 3);
     Expression  := 'a + b';
     Expected    := 8;
@@ -1624,13 +1624,13 @@ begin
   with FMathParser do
   begin
     Expression := 'a + b';
-    Variables.Add('A', 5);
+    Variables.Add('a', 5);
     Variables.Add('b', 3);
 
     Expected    := 8;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
-    Variables['A'] := 7;
+    Variables['a'] := 7;
     Expected       := 10;
     ReturnValue    := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
@@ -1648,7 +1648,7 @@ begin
       begin
         Result := 4
       end);
-    Expression  := 'a + b';
+    Expression  := 'A + b';
     Expected    := 10;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
@@ -1661,7 +1661,7 @@ begin
         Result := 3 + 2
       end);
     Variables.Add('b', 3);
-    Expression  := 'a + b';
+    Expression  := 'A + b';
     Expected    := 8;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
@@ -1676,7 +1676,7 @@ begin
       end);
     Test := 3 + 2;
     Variables.Add('b', 3);
-    Expression  := 'a + b';
+    Expression  := 'A + b';
     Expected    := 8;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);

@@ -43,7 +43,7 @@ const
 
 const
   Numbers = ['0' .. '9'];
-  Letters = ['a' .. 'z'];
+  Letters = ['a' .. 'z', 'A' .. 'Z'];
 
 type
 
