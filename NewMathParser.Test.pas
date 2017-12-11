@@ -40,6 +40,7 @@ type
     procedure TestASin2;
     procedure TestATan;
     procedure TestNeg;
+    procedure TestMinusPlus;
     procedure TestMod;
     procedure TestMod2;
     procedure TestVariables;
@@ -210,6 +211,19 @@ begin
   begin
     Expression  := '-2 + 5';
     Expected    := 3;
+    ReturnValue := ParserResult;
+    CheckEquals(Expected, ReturnValue, Expression);
+  end;
+end;
+
+procedure TestTMathParser.TestMinusPlus;
+var
+  Expected, ReturnValue: Double;
+begin
+  with FMathParser do
+  begin
+    Expression  := '1 - 3 + 2';
+    Expected    := 0;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
   end;
@@ -1240,9 +1254,10 @@ begin
     begin
       MP := TMathParser.Create;
       try
+        MP.Expression := 'Max(3+5, 4, 5, a) + Min(3, 4, 5) + ((4+5)6)7 + ((4+5)6)7';
         for i := 1 to 1000 do
         begin
-          MP.Expression := 'Max(3+5, 4, 5) + Min(3, 4, 5) + ((4+5)6)7 + ((4+5)6)7';
+          MP.Variables['a'] := 5;
           R := MP.ParserResult;  // 767
           MP.Expression := '';
         end;
