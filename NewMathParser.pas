@@ -120,12 +120,15 @@ type
     property Items[const Key: string]: TVar read GetItem write SetItem; default;
   end;
 
+  TVariableChangeNotify = procedure(Name: string; var Value: Double) of object;
+
   TCalculator = class(TObject)
   strict private
     FVariables  : TVariables;
     FResultStack: TStack<TParserItem>;
     FError      : PError;
     FOperations : TOperation;
+    FOnVarChange: TVariableChangeNotify;
     procedure StackToResult_Operation(ACurrent: TParserItem);
     procedure StackToResult(const AStack: TArray<TParserItem>);
     procedure StackToResult_Variable(Current: TParserItem);
@@ -134,6 +137,7 @@ type
     destructor Destroy; override;
     procedure MakeResultStack(const AStack: TArray<TParserItem>);
     function Result: Double;
+    property OnVarChange: TVariableChangeNotify read FOnVarChange write FOnVarChange;
   end;
 
   TMathParser = class(TObject)
@@ -155,6 +159,8 @@ type
     procedure SetExpression(const Value: string);
     procedure DoError(AError: TError);
     procedure CreateStack;
+    function GetOnVarChange: TVariableChangeNotify;
+    procedure SetOnVarChange(const Value: TVariableChangeNotify);
   public
     constructor Create; overload;
     constructor Create(aVariables: TVariables); overload;
@@ -170,6 +176,7 @@ type
     property Operations: TOperation read FOperations;
     property OnError: TNotifyError read FOnError write FOnError;
     property Error: TError read FError;
+    property OnVarChange: TVariableChangeNotify read GetOnVarChange write SetOnVarChange;
   end;
 
 implementation
@@ -246,6 +253,11 @@ begin
     if (FExpression.Length > 0) then
       CreateStack;
   end;
+end;
+
+procedure TMathParser.SetOnVarChange(const Value: TVariableChangeNotify);
+begin
+  FCalculator.OnVarChange := Value;
 end;
 
 function TMathParser.GetParserResult: Double;
@@ -331,6 +343,11 @@ end;
 function TMathParser.GetLastError: TError;
 begin
   Result := FError;
+end;
+
+function TMathParser.GetOnVarChange: TVariableChangeNotify;
+begin
+  Result := FCalculator.OnVarChange;
 end;
 
 { TPostProzess_Validate }
@@ -1004,8 +1021,11 @@ begin
     if Error = cNoError then
     begin
       Result := O.Func(ArgStack);
-      if (ACurrent.Name = '=') then
+      if (ACurrent.Name = '=') then begin
+        if Assigned(FOnVarChange) then
+          FOnVarChange(LeftVarName, Result);
         FVariables.Add(LeftVarName, Result);
+      end;
     end else
     begin
       Result := 0;

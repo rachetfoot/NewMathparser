@@ -56,6 +56,7 @@ type
     procedure TestSqrt2;
     procedure TestSqr;
     procedure TestLogN;
+    procedure TestNotification;
     procedure TestLogN2;
     procedure TestInt;
     procedure TestFrac;
@@ -1282,6 +1283,41 @@ begin
     Expected    := 0.63093;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, 0.0001, Expression);
+  end;
+end;
+
+type
+  TListener = class
+    Name: string;
+    Value: Double;
+    procedure OnNotify(Name: string; var Value: Double);
+  end;
+
+procedure TListener.OnNotify(Name: string; var Value: Double);
+begin
+  Self.Name  := Name;
+  Self.Value := Value;
+end;
+
+procedure TestTMathParser.TestNotification;
+var
+  Listener: TListener;
+  Expected, ReturnValue: Double;
+begin
+  with FMathParser do
+  begin
+    Listener := TListener.Create;
+    try
+      OnVarChange := Listener.OnNotify;
+      Expression  := 'x=1';
+      Expected    := 1;
+      ReturnValue := ParserResult;
+      CheckEquals(Expected, ReturnValue, 0.0001, Expression);
+      CheckEquals(Expected, Listener.Value, 0.0001, Expression);
+      CheckEqualsString('x', Listener.Name, Expression);
+    finally
+      Listener.Free;
+    end;
   end;
 end;
 
