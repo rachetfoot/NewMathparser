@@ -249,7 +249,7 @@ var
 begin
   with FMathParser do
   begin
-    Expression  := '((4+5)6)7 + Min(3, 4, 5)';
+    Expression  := '((4+5)*6)*7 + Min(3, 4, 5)';
     Expected    := 381;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
@@ -298,7 +298,7 @@ begin
   with FMathParser do
   begin
     Variables.Add('a', 12);
-    Expression  := 'Max(3, 2a/2, 5)';
+    Expression  := 'Max(3, 2*a/2, 5)';
     Expected    := 12;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
@@ -306,7 +306,7 @@ begin
   with FMathParser do
   begin
     Variables.Add('a', 6);
-    Expression  := 'Max(3, 2a, 5)';
+    Expression  := 'Max(3, 2*a, 5)';
     Expected    := 12;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
@@ -321,7 +321,7 @@ begin
   with FMathParser do
   begin
     Variables.Add('a', 3);
-    Expression  := 'a(3+5)';
+    Expression  := 'a*(3+5)';
     Expected    := 24;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
@@ -329,7 +329,7 @@ begin
   with FMathParser do
   begin
     Variables.Add('a', 3);
-    Expression  := '(3+5)a';
+    Expression  := '(3+5)*a';
     Expected    := 24;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
@@ -337,7 +337,7 @@ begin
   with FMathParser do
   begin
     Variables.Add('a', 4);
-    Expression  := '3a';
+    Expression  := '3*a';
     Expected    := 12;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
@@ -687,21 +687,21 @@ Expected, ReturnValue  : Double;
 begin
   with FMathParser do
   begin
-    Expression  := '((4+5)6)7';
+    Expression  := '((4+5)*6)*7';
     Expected    := 378;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
   end;
   with FMathParser do
   begin
-    Expression  := '7(6(4+5))';
+    Expression  := '7*(6*(4+5))';
     Expected    := 378;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
   end;
   with FMathParser do
   begin
-    Expression  := '(4+5)(3+3)';
+    Expression  := '(4+5)*(3+3)';
     Expected    := 54;
     ReturnValue := ParserResult;
     CheckEquals(Expected, ReturnValue, Expression);
@@ -1323,7 +1323,7 @@ begin
       try
         for i := 1 to 1000 do
         begin
-          MP.Expression := 'Max(3+5, 4, 5, a) + Min(3, 4, 5) + ((4+5)6)7 + ((4+5)6)7';
+          MP.Expression := 'Max(3+5, 4, 5, a) + Min(3, 4, 5) + ((4+5)*6)*7 + ((4+5)*6)*7';
           MP.Variables['a'] := 5;
           R := MP.ParserResult;  // 767
           MP.Expression := '';

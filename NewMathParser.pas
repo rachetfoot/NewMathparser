@@ -48,7 +48,6 @@ type
     procedure CheckBracketError;
     procedure Loop;
     procedure CleanPlusMinus;
-    procedure InsertMulti;
     procedure CountArg;
     procedure CheckError;
   private
@@ -342,7 +341,6 @@ begin
   begin
     CheckBracketError;
     if FError.IsNoError then CleanPlusMinus;
-    if FError.IsNoError then InsertMulti;
     if FError.IsNoError then CheckForSubstatements;
     if FError.IsNoError then FStack.SetArgCount;
     if FError.IsNoError then Loop;
@@ -483,18 +481,6 @@ begin
     iSS              := FStack.Last(tsRightBracket);
     FError^.Position := iSS.TextPos;
   end;
-end;
-
-procedure TValidate.InsertMulti;
-const
-  Types1 = [tsLeftBracket, tsValue, tsVariable, tsFunction];
-  Types2 = [tsValue, tsVariable, tsRightBracket];
-var
-  i: Integer;
-begin
-  for i := FStack.Count - 2 downto 0 do
-    if (FStack[i].TypeStack in Types2) and (FStack[i + 1].TypeStack in Types1) then
-      FStack.Insert(i + 1, TParserItem.Create(tsOperator, FStack[i].TextPos, '*'));
 end;
 
 procedure TValidate.Loop;
